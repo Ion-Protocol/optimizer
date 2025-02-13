@@ -6,14 +6,17 @@ import "./App.css";
 import { AppRouter } from "./AppRouter";
 import { AppHeader } from "./components/AppHeader";
 import { queryClient, wagmiConfig } from "./config/wagmi";
+import { AppProviders } from "./providers/AppProviders";
 
 function App() {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider>
-          <AppHeader />
-          <AppRouter />
+          <AppProviders>
+            <AppHeader />
+            <AppRouter />
+          </AppProviders>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
