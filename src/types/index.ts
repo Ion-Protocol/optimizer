@@ -6,7 +6,7 @@ export interface VaultGroupConfigItem {
 }
 
 export enum VaultGroup {
-  GroupOne = "groupOne",
+  GroupOne = "groupone",
 }
 
 export type VaultGroupsConfig = Record<string, VaultGroupConfigItem>;

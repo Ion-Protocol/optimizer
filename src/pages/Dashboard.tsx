@@ -1,7 +1,14 @@
+import { useNavigate } from "react-router-dom";
 import { useDashboard } from "../contexts/dashboard/useDashboard";
+import { VaultGroup } from "../types";
 
 export function Dashboard() {
   const { totalTvl, vaultGroupData, loading } = useDashboard();
+  const navigate = useNavigate();
+
+  function handleClickExplore(vaultGroup: VaultGroup) {
+    navigate(`/vault-group/${vaultGroup}`);
+  }
   return (
     <div>
       <h1>Hemi Ecosystem Optimizer</h1>
@@ -16,6 +23,9 @@ export function Dashboard() {
             <p>{vaultGroup.vaultGroupKey}: </p>
             <p>{vaultGroup.tvl}</p>
             <p>{vaultGroup.apy}</p>
+            <p>Protocols: </p>
+            <p>{vaultGroup.protocols.join(", ")}</p>
+            <button onClick={() => handleClickExplore(vaultGroup.vaultGroupKey)}>Explore</button>
           </div>
         ))
       )}

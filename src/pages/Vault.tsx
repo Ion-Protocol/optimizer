@@ -1,12 +1,12 @@
 import { useParams } from "react-router-dom";
 
 export function Vault() {
-  const { vaultId } = useParams();
+  const { vaultKey } = useParams();
 
   return (
     <div>
       <h1>Vault Details</h1>
-      <p>Viewing details for vault with ID: {vaultId}</p>
+      <p>Viewing details for vault with key: {vaultKey}</p>
     </div>
   );
 }

@@ -19,6 +19,7 @@ export interface VaultGroupData {
   vaultGroupKey: VaultGroup;
   tvl: string;
   apy: string; // Formatted as a percentage (e.g. 100 for "100%")
+  protocols: VaultKey[];
 }
 
 export interface DashboardContextType {

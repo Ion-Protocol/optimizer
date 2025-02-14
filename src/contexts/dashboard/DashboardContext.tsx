@@ -110,6 +110,8 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   // Vault group data containing tvl values in usd and apy values
   const vaultGroupData = useMemo(() => {
     return vaultGroupState.map((vaultGroup) => {
+      const protocols = vaultGroupsConfig[vaultGroup.key].vaults;
+
       // TVL
       const tvlAsBigInt = BigInt(vaultGroup.tvl);
       const tvlInUsdAsBigInt = (tvlAsBigInt * BigInt(ethPrice)) / BigInt(1e18);
@@ -126,6 +128,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
         vaultGroupKey: vaultGroup.key,
         tvl: formattedTvlInUsd,
         apy: formattedApy,
+        protocols: protocols,
       };
     });
   }, [vaultGroupState, ethPrice]);

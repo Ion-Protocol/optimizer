@@ -1,12 +1,12 @@
 import { BrowserRouter, Link, Routes, Route } from "react-router-dom";
 import { Dashboard } from "./pages/Dashboard";
 import { Vault } from "./pages/Vault";
-import { Vaults } from "./pages/Vaults";
+import { Vaults } from "./pages/VaultGroup";
 
 const routes = [
   { path: "/", element: <Dashboard /> },
-  { path: "/vaults", element: <Vaults /> },
-  { path: "/vault/:vaultId", element: <Vault /> },
+  { path: "/vault-group/:vaultGroup", element: <Vaults /> },
+  { path: "/vault/:vaultKey", element: <Vault /> },
 ];
 
 export function AppRouter() {
@@ -15,9 +15,6 @@ export function AppRouter() {
       <nav style={{ padding: "1rem", borderBottom: "1px solid #ccc" }}>
         <Link to="/" style={{ margin: "0 1rem" }}>
           Dashboard
-        </Link>
-        <Link to="/vaults" style={{ margin: "0 1rem" }}>
-          Vaults
         </Link>
       </nav>
       <div style={{ padding: "1rem" }}>
