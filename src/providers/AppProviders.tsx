@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { CounterProvider } from "../contexts/counter/CounterContext";
+import { DashboardProvider } from "../contexts/dashboard/DashboardContext";
 
 type AppProvidersProps = {
   children: ReactNode;
@@ -7,9 +7,9 @@ type AppProvidersProps = {
 
 export const AppProviders = ({ children }: AppProvidersProps) => {
   return (
-    <CounterProvider>
+    <DashboardProvider>
       {/* Add other providers here as needed */}
       {children}
-    </CounterProvider>
+    </DashboardProvider>
   );
 };
