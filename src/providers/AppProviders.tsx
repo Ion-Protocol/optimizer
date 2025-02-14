@@ -6,10 +6,5 @@ type AppProvidersProps = {
 };
 
 export const AppProviders = ({ children }: AppProvidersProps) => {
-  return (
-    <DashboardProvider>
-      {/* Add other providers here as needed */}
-      {children}
-    </DashboardProvider>
-  );
+  return <DashboardProvider>{children}</DashboardProvider>;
 };

@@ -1,15 +1,11 @@
-import {
-  getAllVaultKeys,
-  getEthPrice,
-  getRate,
-  getTotalSupply,
-  getVaultByKey,
-  VaultKey,
-} from "@molecular-labs/nucleus";
+import { getEthPrice, getRate, getTotalSupply, getVaultByKey, VaultKey } from "@molecular-labs/nucleus";
 import { createContext, ReactNode, useEffect, useMemo, useState } from "react";
 import { Chain } from "viem";
 import { mainnet } from "viem/chains";
-import { DashboardContextType, VaultState } from "./dashboardTypes";
+import { fetchVaultAPY } from "../../api/nucleus";
+import { vaultGroupsConfig } from "../../config/vaultGroupsConfig";
+import { VaultGroup } from "../../types";
+import { DashboardContextType, VaultGroupState } from "./dashboardTypes";
 
 /////////////////////////////////////
 // Async functions for dashboard
@@ -44,9 +40,34 @@ async function getTotalSupplyByVault(vaultKey: VaultKey) {
 async function getTvlByVault(vaultKey: VaultKey) {
   const vaultTotalSupply = await getTotalSupplyByVault(vaultKey);
   const vaultShareRate = await getShareRateByVault(vaultKey);
-  // console.log(vaultKey, vaultTotalSupply, vaultShareRate);
   const tvl = (vaultTotalSupply * vaultShareRate) / BigInt(1e18);
   return tvl;
+}
+
+// Get the TVL for a vault group by summing the TVLs of all the vaults in the group
+async function getTvlByVaultGroup(vaultGroup: VaultGroup) {
+  const vaultGroupConfig = vaultGroupsConfig[vaultGroup];
+  const vaultTvls = await Promise.all(vaultGroupConfig.vaults.map(getTvlByVault));
+  const totalTvl = vaultTvls.reduce((acc, tvl) => acc + tvl, BigInt(0));
+  return totalTvl;
+}
+
+// Get the APY for a vault group by getting the highest APY of any of the vaults in the group
+async function getApyByVaultGroup(vaultGroup: VaultGroup) {
+  const vaultGroupConfig = vaultGroupsConfig[vaultGroup];
+  const vaultApys = await Promise.all(
+    vaultGroupConfig.vaults.map(async (vaultKey) => {
+      const vaultConfig = getVaultByKey(vaultKey);
+      const { apy } = await fetchVaultAPY({
+        tokenAddress: vaultConfig.token.addresses[mainnet.id as keyof typeof vaultConfig.token.addresses] ?? "0x",
+      });
+      return apy;
+    })
+  );
+
+  // The APY for a vault group is the highest APY of any of the vaults in the group
+  const vaultGroupApy = Math.max(...vaultApys);
+  return vaultGroupApy;
 }
 
 /////////////////////////////////////
@@ -56,14 +77,24 @@ async function getTvlByVault(vaultKey: VaultKey) {
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
 
 export const DashboardProvider = ({ children }: { children: ReactNode }) => {
+  //////////////////
   // Raw state
-  const [vaultState, setVaultState] = useState<VaultState[]>([]);
+  //////////////////
+  const [vaultGroupState, setVaultGroupState] = useState<VaultGroupState[]>([]);
   const [ethPrice, setEthPrice] = useState<string>("0");
   const [loading, setLoading] = useState<boolean>(true);
 
+  //////////////////
+  // Hooks
+  //////////////////
+
+  //////////////////
   // Derived state
+  //////////////////
+
+  // Total TVL in USD: derived from the sum of the TVL values of all vault groups
   const totalTvl = useMemo(() => {
-    const totalTvlAsBigInt = vaultState.reduce((acc, vault) => {
+    const totalTvlAsBigInt = vaultGroupState.reduce((acc, vault) => {
       return acc + BigInt(vault.tvl.toString());
     }, BigInt(0));
     const totalTvlInUsdAsBigInt = (totalTvlAsBigInt * BigInt(ethPrice)) / BigInt(1e18);
@@ -74,49 +105,58 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     }).format(Number(totalTvlInUsd));
 
     return formattedTotalTvlInUsd;
-  }, [ethPrice, vaultState]);
+  }, [ethPrice, vaultGroupState]);
 
-  const vaultData = useMemo(() => {
-    return vaultState.map((vault) => {
-      const tvlAsBigInt = BigInt(vault.tvl);
+  // Vault group data containing tvl values in usd and apy values
+  const vaultGroupData = useMemo(() => {
+    return vaultGroupState.map((vaultGroup) => {
+      // TVL
+      const tvlAsBigInt = BigInt(vaultGroup.tvl);
       const tvlInUsdAsBigInt = (tvlAsBigInt * BigInt(ethPrice)) / BigInt(1e18);
       const tvlInUsd = tvlInUsdAsBigInt / BigInt(1e8);
       const formattedTvlInUsd = new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "USD",
       }).format(Number(tvlInUsd));
+
+      // APY
+      const formattedApy = `${vaultGroup.apy.toFixed(2)}%`;
+
       return {
-        vaultKey: vault.vaultKey,
+        vaultGroupKey: vaultGroup.key,
         tvl: formattedTvlInUsd,
+        apy: formattedApy,
       };
     });
-  }, [vaultState, ethPrice]);
+  }, [vaultGroupState, ethPrice]);
 
   // Actions
 
   // Effects for async operations
   useEffect(() => {
-    // Fetch and set vault state
-    async function fetchVaultState() {
+    // Fetch and set vault group state
+    async function fetchVaultGroupState() {
       try {
         setLoading(true);
-        const vaultKeys = getAllVaultKeys();
-        const tvlPromises = vaultKeys.map(async (vaultKey) => {
-          const tvl = await getTvlByVault(vaultKey);
+        const vaultGroups = Object.keys(vaultGroupsConfig) as VaultGroup[];
+        const tvlPromises = vaultGroups.map(async (vaultGroup) => {
+          const tvl = await getTvlByVaultGroup(vaultGroup);
+          const apy = await getApyByVaultGroup(vaultGroup);
           return {
             tvl: tvl.toString(),
-            vaultKey,
+            apy: apy,
+            key: vaultGroup,
           };
         });
-        const vaultData = await Promise.all(tvlPromises);
-        setVaultState(vaultData);
+        const rawVaultGroupData = await Promise.all(tvlPromises);
+        setVaultGroupState(rawVaultGroupData);
       } catch (error) {
         console.error(error);
       } finally {
         setLoading(false);
       }
     }
-    fetchVaultState();
+    fetchVaultGroupState();
 
     // Fetch and set ETH price state
     async function fetchEthPrice() {
@@ -126,8 +166,8 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     fetchEthPrice();
   }, []);
 
-  // Context value
-  const value = useMemo(() => ({ totalTvl, vaultData, loading }), [totalTvl, vaultData, loading]);
+  // Context value that passes along the derived state values and actions
+  const value = useMemo(() => ({ totalTvl, vaultGroupData, loading }), [loading, totalTvl, vaultGroupData]);
 
   // Provider
   return <DashboardContext.Provider value={value}>{children}</DashboardContext.Provider>;

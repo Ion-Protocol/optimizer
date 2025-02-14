@@ -1,7 +1,7 @@
 import { useDashboard } from "../contexts/dashboard/useDashboard";
 
 export function Dashboard() {
-  const { totalTvl, vaultData, loading } = useDashboard();
+  const { totalTvl, vaultGroupData, loading } = useDashboard();
   return (
     <div>
       <h1>Hemi Ecosystem Optimizer</h1>
@@ -11,10 +11,11 @@ export function Dashboard() {
       {loading ? (
         <p>Vaults: Loading...</p>
       ) : (
-        vaultData.map((vault) => (
-          <div style={{ display: "flex", gap: "10px", justifyContent: "center" }} key={vault.vaultKey}>
-            <p>{vault.vaultKey}: </p>
-            <p>{vault.tvl}</p>
+        vaultGroupData.map((vaultGroup) => (
+          <div style={{ display: "flex", gap: "10px", justifyContent: "center" }} key={vaultGroup.vaultGroupKey}>
+            <p>{vaultGroup.vaultGroupKey}: </p>
+            <p>{vaultGroup.tvl}</p>
+            <p>{vaultGroup.apy}</p>
           </div>
         ))
       )}
