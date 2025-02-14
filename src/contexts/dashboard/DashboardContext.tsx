@@ -59,6 +59,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   // Raw state
   const [vaultState, setVaultState] = useState<VaultState[]>([]);
   const [ethPrice, setEthPrice] = useState<string>("0");
+  const [loading, setLoading] = useState<boolean>(true);
 
   // Derived state
   const totalTvl = useMemo(() => {
@@ -97,16 +98,23 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Fetch and set vault state
     async function fetchVaultState() {
-      const vaultKeys = getAllVaultKeys();
-      const tvlPromises = vaultKeys.map(async (vaultKey) => {
-        const tvl = await getTvlByVault(vaultKey);
-        return {
-          tvl: tvl.toString(),
-          vaultKey,
-        };
-      });
-      const vaultData = await Promise.all(tvlPromises);
-      setVaultState(vaultData);
+      try {
+        setLoading(true);
+        const vaultKeys = getAllVaultKeys();
+        const tvlPromises = vaultKeys.map(async (vaultKey) => {
+          const tvl = await getTvlByVault(vaultKey);
+          return {
+            tvl: tvl.toString(),
+            vaultKey,
+          };
+        });
+        const vaultData = await Promise.all(tvlPromises);
+        setVaultState(vaultData);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
     }
     fetchVaultState();
 
@@ -119,7 +127,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // Context value
-  const value = useMemo(() => ({ totalTvl, vaultData }), [totalTvl, vaultData]);
+  const value = useMemo(() => ({ totalTvl, vaultData, loading }), [totalTvl, vaultData, loading]);
 
   // Provider
   return <DashboardContext.Provider value={value}>{children}</DashboardContext.Provider>;
