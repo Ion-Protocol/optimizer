@@ -3,8 +3,8 @@ import { useDashboard } from "../contexts/dashboard/useDashboard";
 import { VaultGroup } from "../types";
 
 export function Dashboard() {
-  const { totalTvl, vaultGroupData, loading } = useDashboard();
   const navigate = useNavigate();
+  const { totalTvl, vaultGroupData, loading } = useDashboard();
 
   function handleClickExplore(vaultGroup: VaultGroup) {
     navigate(`/vault-group/${vaultGroup}`);
