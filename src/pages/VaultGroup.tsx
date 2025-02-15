@@ -1,12 +1,11 @@
 import { VaultKey } from "@molecular-labs/nucleus";
 import { useNavigate, useParams } from "react-router-dom";
-import { vaultGroupsConfig } from "../config/vaultGroupsConfig";
-import { VaultGroup } from "../types";
+import { useVaultGroup } from "../hooks/useVaultGroup";
 
 export function Vaults() {
   const { vaultGroup } = useParams();
   const navigate = useNavigate();
-  const vaults = vaultGroupsConfig[vaultGroup as VaultGroup].vaults;
+  const { vaultsData, totalTvl, loading, error } = useVaultGroup();
 
   function handleClickVault(vault: VaultKey) {
     navigate(`/vault/${vault}`);
@@ -14,10 +13,19 @@ export function Vaults() {
   return (
     <div>
       <h3>{vaultGroup}</h3>
+      {loading && <p>Loading...</p>}
+      {error && <p>Error: {error}</p>}
+      <p>Total TVL: {totalTvl}</p>
       <ul>
-        {vaults.map((vault) => (
-          <li key={vault}>
-            <button onClick={() => handleClickVault(vault)}>{vault}</button>
+        {vaultsData.map((vault) => (
+          <li key={vault.key}>
+            <div>
+              <p>{vault.key}</p>
+              <p>{vault.tvl}</p>
+              <p>{vault.apy}</p>
+              <p>{vault.rewardsCount} Rewards</p>
+            </div>
+            <button onClick={() => handleClickVault(vault.key)}>Deposit</button>
           </li>
         ))}
       </ul>

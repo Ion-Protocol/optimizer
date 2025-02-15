@@ -1,39 +1,16 @@
-import { getEthPrice, getVaultByKey } from "@molecular-labs/nucleus";
+import { getEthPrice } from "@molecular-labs/nucleus";
+import { useEffect, useMemo, useState } from "react";
 import { mainnet } from "viem/chains";
-import { fetchVaultAPY } from "../api/nucleus";
 import { vaultGroupsConfig } from "../config/vaultGroupsConfig";
 import { VaultGroup } from "../types";
-import { useState, useMemo, useEffect } from "react";
-import { getTvlByVaultGroup } from "./shared";
-import { VaultGroupState } from "../types/dashboardTypes";
-
-/////////////////////////////////////
-// Async functions for dashboard
-/////////////////////////////////////
-
-// Get the APY for a vault group by getting the highest APY of any of the vaults in the group
-async function getApyByVaultGroup(vaultGroup: VaultGroup) {
-  const vaultGroupConfig = vaultGroupsConfig[vaultGroup];
-  const vaultApys = await Promise.all(
-    vaultGroupConfig.vaults.map(async (vaultKey) => {
-      const vaultConfig = getVaultByKey(vaultKey);
-      const { apy } = await fetchVaultAPY({
-        tokenAddress: vaultConfig.token.addresses[mainnet.id as keyof typeof vaultConfig.token.addresses] ?? "0x",
-      });
-      return apy;
-    })
-  );
-
-  // The APY for a vault group is the highest APY of any of the vaults in the group
-  const vaultGroupApy = Math.max(...vaultApys);
-  return vaultGroupApy;
-}
+import { TvlService } from "../services/TvlService";
+import { ApyService } from "../services/ApyService";
 
 export function useDashboard() {
   //////////////////
   // Raw state
   //////////////////
-  const [vaultGroupState, setVaultGroupState] = useState<VaultGroupState[]>([]);
+  const [vaultGroupsState, setVaultGroupsState] = useState<{ key: VaultGroup; tvl: string; apy: number }[]>([]);
   const [ethPrice, setEthPrice] = useState<string>("0");
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -43,7 +20,7 @@ export function useDashboard() {
 
   // Total TVL in USD: derived from the sum of the TVL values of all vault groups
   const totalTvl = useMemo(() => {
-    const totalTvlAsBigInt = vaultGroupState.reduce((acc, vault) => {
+    const totalTvlAsBigInt = vaultGroupsState.reduce((acc, vault) => {
       return acc + BigInt(vault.tvl.toString());
     }, BigInt(0));
     const totalTvlInUsdAsBigInt = (totalTvlAsBigInt * BigInt(ethPrice)) / BigInt(1e18);
@@ -54,11 +31,11 @@ export function useDashboard() {
     }).format(Number(totalTvlInUsd));
 
     return formattedTotalTvlInUsd;
-  }, [ethPrice, vaultGroupState]);
+  }, [ethPrice, vaultGroupsState]);
 
   // Vault group data containing tvl values in usd and apy values
   const vaultGroupData = useMemo(() => {
-    return vaultGroupState.map((vaultGroup) => {
+    return vaultGroupsState.map((vaultGroup) => {
       const protocols = vaultGroupsConfig[vaultGroup.key].vaults;
 
       // TVL
@@ -80,7 +57,7 @@ export function useDashboard() {
         protocols: protocols,
       };
     });
-  }, [vaultGroupState, ethPrice]);
+  }, [vaultGroupsState, ethPrice]);
 
   ///////////////////////////////
   // Effects for async operations
@@ -92,8 +69,8 @@ export function useDashboard() {
         setLoading(true);
         const vaultGroups = Object.keys(vaultGroupsConfig) as VaultGroup[];
         const tvlPromises = vaultGroups.map(async (vaultGroup) => {
-          const tvl = await getTvlByVaultGroup(vaultGroup);
-          const apy = await getApyByVaultGroup(vaultGroup);
+          const tvl = await TvlService.getTvlByVaultGroup(vaultGroup);
+          const apy = await ApyService.getApyByVaultGroup(vaultGroup);
           return {
             tvl: tvl.toString(),
             apy: apy,
@@ -101,7 +78,7 @@ export function useDashboard() {
           };
         });
         const rawVaultGroupData = await Promise.all(tvlPromises);
-        setVaultGroupState(rawVaultGroupData);
+        setVaultGroupsState(rawVaultGroupData);
       } catch (error) {
         console.error(error);
       } finally {
