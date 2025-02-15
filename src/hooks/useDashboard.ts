@@ -1,56 +1,15 @@
-import { getEthPrice, getRate, getTotalSupply, getVaultByKey, VaultKey } from "@molecular-labs/nucleus";
-import { createContext, ReactNode, useEffect, useMemo, useState } from "react";
-import { Chain } from "viem";
+import { getEthPrice, getVaultByKey } from "@molecular-labs/nucleus";
 import { mainnet } from "viem/chains";
-import { fetchVaultAPY } from "../../api/nucleus";
-import { vaultGroupsConfig } from "../../config/vaultGroupsConfig";
-import { VaultGroup } from "../../types";
-import { DashboardContextType, VaultGroupState } from "./dashboardTypes";
+import { fetchVaultAPY } from "../api/nucleus";
+import { vaultGroupsConfig } from "../config/vaultGroupsConfig";
+import { VaultGroup } from "../types";
+import { useState, useMemo, useEffect } from "react";
+import { getTvlByVaultGroup } from "./shared";
+import { VaultGroupState } from "../types/dashboardTypes";
 
 /////////////////////////////////////
 // Async functions for dashboard
 /////////////////////////////////////
-
-// Get the total supply for a vault on a specific chain
-async function getTotalSupplyByVaultAndChain(vaultKey: VaultKey, chain: Chain) {
-  const vaultConfig = getVaultByKey(vaultKey);
-  const vaultAddress = vaultConfig.token.addresses[chain.id as keyof typeof vaultConfig.token.addresses] ?? "0x";
-  const totalSupply = await getTotalSupply({ tokenAddress: vaultAddress, chain });
-  return totalSupply;
-}
-
-// Get the share rate for a vault on a specific chain
-async function getShareRateByVault(vaultKey: VaultKey) {
-  const vaultConfig = getVaultByKey(vaultKey);
-  const accountantAddress = vaultConfig.contracts.accountant;
-  const rate = await getRate({ accountantAddress, chain: mainnet });
-  return rate;
-}
-
-// Get the total supply for a vault on all chains
-async function getTotalSupplyByVault(vaultKey: VaultKey) {
-  const vaultConfig = getVaultByKey(vaultKey);
-  const chains = Object.values(vaultConfig.deposit.sourceChains);
-  const promises = chains.map((chain) => getTotalSupplyByVaultAndChain(vaultKey, chain));
-  const results = await Promise.all(promises);
-  return results.reduce((acc, supply) => acc + supply, BigInt(0));
-}
-
-// Get the TVL for a vault by multiplying the total supply of that vault by the share rate for that vault
-async function getTvlByVault(vaultKey: VaultKey) {
-  const vaultTotalSupply = await getTotalSupplyByVault(vaultKey);
-  const vaultShareRate = await getShareRateByVault(vaultKey);
-  const tvl = (vaultTotalSupply * vaultShareRate) / BigInt(1e18);
-  return tvl;
-}
-
-// Get the TVL for a vault group by summing the TVLs of all the vaults in the group
-async function getTvlByVaultGroup(vaultGroup: VaultGroup) {
-  const vaultGroupConfig = vaultGroupsConfig[vaultGroup];
-  const vaultTvls = await Promise.all(vaultGroupConfig.vaults.map(getTvlByVault));
-  const totalTvl = vaultTvls.reduce((acc, tvl) => acc + tvl, BigInt(0));
-  return totalTvl;
-}
 
 // Get the APY for a vault group by getting the highest APY of any of the vaults in the group
 async function getApyByVaultGroup(vaultGroup: VaultGroup) {
@@ -70,23 +29,13 @@ async function getApyByVaultGroup(vaultGroup: VaultGroup) {
   return vaultGroupApy;
 }
 
-/////////////////////////////////////
-// Dashboard Context
-/////////////////////////////////////
-
-const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
-
-export const DashboardProvider = ({ children }: { children: ReactNode }) => {
+export function useDashboard() {
   //////////////////
   // Raw state
   //////////////////
   const [vaultGroupState, setVaultGroupState] = useState<VaultGroupState[]>([]);
   const [ethPrice, setEthPrice] = useState<string>("0");
   const [loading, setLoading] = useState<boolean>(true);
-
-  //////////////////
-  // Hooks
-  //////////////////
 
   //////////////////
   // Derived state
@@ -133,9 +82,9 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     });
   }, [vaultGroupState, ethPrice]);
 
-  // Actions
-
+  ///////////////////////////////
   // Effects for async operations
+  ///////////////////////////////
   useEffect(() => {
     // Fetch and set vault group state
     async function fetchVaultGroupState() {
@@ -169,11 +118,9 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     fetchEthPrice();
   }, []);
 
-  // Context value that passes along the derived state values and actions
-  const value = useMemo(() => ({ totalTvl, vaultGroupData, loading }), [loading, totalTvl, vaultGroupData]);
-
-  // Provider
-  return <DashboardContext.Provider value={value}>{children}</DashboardContext.Provider>;
-};
-
-export { DashboardContext };
+  return {
+    totalTvl,
+    vaultGroupData,
+    loading,
+  };
+}

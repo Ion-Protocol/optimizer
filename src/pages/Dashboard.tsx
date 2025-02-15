@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { useDashboard } from "../contexts/dashboard/useDashboard";
 import { VaultGroup } from "../types";
+import { useDashboard } from "../hooks/useDashboard";
 
 export function Dashboard() {
   const navigate = useNavigate();

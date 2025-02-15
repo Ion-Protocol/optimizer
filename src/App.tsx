@@ -4,21 +4,18 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from "wagmi";
 import "./App.css";
 import { AppRouter } from "./AppRouter";
+import { AppFooter } from "./components/AppFooter";
 import { AppHeader } from "./components/AppHeader";
 import { queryClient, wagmiConfig } from "./config/wagmi";
-import { AppProviders } from "./providers/AppProviders";
-import { AppFooter } from "./components/AppFooter";
 
 function App() {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider>
-          <AppProviders>
-            <AppHeader />
-            <AppRouter />
-            <AppFooter />
-          </AppProviders>
+          <AppHeader />
+          <AppRouter />
+          <AppFooter />
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
