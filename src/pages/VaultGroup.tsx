@@ -10,8 +10,14 @@ export function Vaults() {
   function handleClickVault(vault: VaultKey) {
     navigate(`/vault/${vault}`);
   }
+
+  function handleClickBack() {
+    navigate(`/`);
+  }
+
   return (
     <div>
+      <button onClick={handleClickBack}>Back</button>
       <h3>{vaultGroup}</h3>
       {loading && <p>Loading...</p>}
       {error && <p>Error: {error}</p>}
