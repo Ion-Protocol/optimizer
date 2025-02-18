@@ -1,12 +1,12 @@
 import { BrowserRouter, Link, Routes, Route } from "react-router-dom";
 import { Dashboard } from "./pages/Dashboard";
 import { Vault } from "./pages/Vault";
-import { Vaults } from "./pages/VaultGroup";
+import { VaultGroup } from "./pages/VaultGroup";
 
 const routes = [
   { path: "/", element: <Dashboard /> },
-  { path: "/vault-group/:vaultGroup", element: <Vaults /> },
-  { path: "/vault/:vaultKey", element: <Vault /> },
+  { path: "/vault-group/:vaultGroup", element: <VaultGroup /> },
+  { path: "/vault-group/:vaultGroup/:vaultKey", element: <Vault /> },
 ];
 
 export function AppRouter() {

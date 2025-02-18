@@ -2,13 +2,13 @@ import { VaultKey } from "@molecular-labs/nucleus";
 import { useNavigate, useParams } from "react-router-dom";
 import { useVaultGroup } from "../hooks/useVaultGroup";
 
-export function Vaults() {
+export function VaultGroup() {
   const { vaultGroup } = useParams();
   const navigate = useNavigate();
   const { vaultsData, totalTvl, loading, error } = useVaultGroup();
 
   function handleClickVault(vault: VaultKey) {
-    navigate(`/vault/${vault}`);
+    navigate(`/vault-group/${vaultGroup}/${vault}`);
   }
 
   function handleClickBack() {

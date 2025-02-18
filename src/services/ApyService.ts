@@ -1,8 +1,8 @@
 import { getVaultByKey, VaultKey } from "@molecular-labs/nucleus";
 import { mainnet } from "viem/chains";
-import { fetchVaultAPY } from "../api/nucleus";
 import { vaultGroupsConfig } from "../config/vaultGroupsConfig";
 import { VaultGroup } from "../types";
+import { fetchVaultAPY } from "../api/nucleus/fetchVaultAPY";
 
 export class ApyService {
   // Private constructor to prevent instantiation.
