@@ -1,14 +1,17 @@
 import { bigIntToNumberAsString, getEthPrice, getVaultByKey, TokenKey, VaultKey } from "@molecular-labs/nucleus";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
+import { formatEther } from "viem";
 import { mainnet } from "viem/chains";
 import { useAccount } from "wagmi";
-import { balanceOf } from "../api/contracts/erc20";
+import { allowance, approve, balanceOf } from "../api/contracts/erc20";
 import { ApyService } from "../services/ApyService";
-import { DepositService } from "../services/DepositService";
 import { TvlService } from "../services/TvlService";
-import { convertToDecimals } from "../utils/bigint";
+import { VaultService } from "../services/VaultService";
+import { convertToBigIntString } from "../utils/bigint";
 import { sanitizeDepositInput } from "../utils/number";
+
+type TransactionStatus = "idle" | "processing" | "success" | "error";
 
 export function useVault() {
   //////////////////////////////
@@ -32,7 +35,10 @@ export function useVault() {
   const [receiveTokenIndex, setReceiveTokenIndex] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<"deposit" | "withdraw">("deposit");
   const [loading, setLoading] = useState<boolean>(false);
-  const [errors, setErrors] = useState<string[]>([]);
+  const [approvalStatus, setApprovalStatus] = useState<TransactionStatus>("idle");
+  const [depositStatus, setDepositStatus] = useState<TransactionStatus>("idle");
+  const [error, setError] = useState<string>("");
+  const [debouncedInputValue, setDebouncedInputValue] = useState<string>(inputValue);
 
   //////////////////////////////
   // Component Actions
@@ -80,7 +86,7 @@ export function useVault() {
       const tokenIndex = activeTab === "deposit" ? depositTokenIndex : receiveTokenIndex;
       try {
         const availableTokens = activeTab === "deposit" ? availableDepositTokens : availableReceiveTokens;
-        const rate = await DepositService.getRateInQuote(
+        const rate = await VaultService.getRateInQuote(
           vaultKey as VaultKey,
           availableTokens[tokenIndex].token.key as TokenKey
         );
@@ -88,20 +94,7 @@ export function useVault() {
       } catch (error) {
         const err = error as Error;
         console.error("Failed to fetch rate in quote:", err.message);
-        setErrors((prevErrors) => [...prevErrors, err.message]);
-      }
-    };
-
-    // Preview fee
-    const fetchPreviewFee = async () => {
-      try {
-        if (!address) return;
-        const previewFee = await DepositService.getPrevieFee(address, vaultKey as VaultKey);
-        setPreviewFee(previewFee.toString());
-      } catch (error) {
-        const err = error as Error;
-        console.error("Failed to fetch rate in quote:", err.message);
-        setErrors((prevErrors) => [...prevErrors, err.message]);
+        setError(err.message);
       }
     };
 
@@ -120,13 +113,13 @@ export function useVault() {
       } catch (error) {
         const err = error as Error;
         console.error("Failed to fetch user balance for selected token:", err.message);
-        setErrors((prevErrors) => [...prevErrors, err.message]);
+        setError(err.message);
       }
     };
 
-    // Execute all fetches in parallel while maintaining individual error handling
+    // Execute only rate and balance fetches in parallel
     setLoading(true);
-    Promise.allSettled([fetchRateInQuote(), fetchPreviewFee(), fetchAssetBalance()]).finally(() => {
+    Promise.allSettled([fetchRateInQuote(), fetchAssetBalance()]).finally(() => {
       setLoading(false);
     });
   }, [
@@ -134,10 +127,36 @@ export function useVault() {
     address,
     availableDepositTokens,
     availableReceiveTokens,
+    config.deposit.bridgeChainIdentifier,
     depositTokenIndex,
     receiveTokenIndex,
     vaultKey,
   ]);
+
+  // Separate effect just for preview fee fetching.
+  useEffect(() => {
+    const fetchPreviewFee = async () => {
+      try {
+        setLoading(true);
+        const bridgeChainId = config.deposit.bridgeChainIdentifier;
+        if (!address || bridgeChainId === 0 || debouncedInputValue === "") return;
+        const previewFee = await VaultService.getPreviewFee({
+          vaultKey: vaultKey as VaultKey,
+          address: address as `0x${string}`,
+          shareAmount: BigInt(convertToBigIntString(debouncedInputValue)),
+        });
+        setPreviewFee(previewFee.toString());
+      } catch (error) {
+        const err = error as Error;
+        console.error("Failed to fetch preview fee:", err.message);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPreviewFee();
+  }, [address, config.deposit.bridgeChainIdentifier, vaultKey, debouncedInputValue]);
 
   // Data that remains constant with the vault key
   useEffect(() => {
@@ -156,7 +175,7 @@ export function useVault() {
       } catch (error) {
         const err = error as Error;
         console.error("Failed to fetch vault balance:", err.message);
-        setErrors((prevErrors) => [...prevErrors, err.message]);
+        setError(err.message);
       }
     };
 
@@ -168,7 +187,7 @@ export function useVault() {
       } catch (error) {
         const err = error as Error;
         console.error("Failed to fetch vault apy:", err.message);
-        setErrors((prevErrors) => [...prevErrors, err.message]);
+        setError(err.message);
       }
     };
 
@@ -180,7 +199,7 @@ export function useVault() {
       } catch (error) {
         const err = error as Error;
         console.error("Failed to fetch vault tvl:", err.message);
-        setErrors((prevErrors) => [...prevErrors, err.message]);
+        setError(err.message);
       }
     };
 
@@ -188,12 +207,12 @@ export function useVault() {
     const fetchEthPerVaultAssetRate = async () => {
       try {
         // Fetching the rate for WETH since it's always the same as ETH
-        const rate = await DepositService.getRateInQuote(vaultKey as VaultKey, "weth");
+        const rate = await VaultService.getRateInQuote(vaultKey as VaultKey, "weth");
         setEthPerVaultAssetRate(rate.toString());
       } catch (error) {
         const err = error as Error;
         console.error("Failed to fetch eth per vault asset rate:", err.message);
-        setErrors((prevErrors) => [...prevErrors, err.message]);
+        setError(err.message);
       }
     };
 
@@ -205,7 +224,7 @@ export function useVault() {
       } catch (error) {
         const err = error as Error;
         console.error("Failed to fetch eth price:", err.message);
-        setErrors((prevErrors) => [...prevErrors, err.message]);
+        setError(err.message);
       }
     };
 
@@ -223,6 +242,81 @@ export function useVault() {
   }, [address, vaultKey]);
 
   //////////////////////////////
+  // Side Effects
+  //////////////////////////////
+
+  // Reset the input value, deposit token index, receive token index, and active tab when the address changes
+  useEffect(() => {
+    if (!address) {
+      setInputValue("");
+      setDepositTokenIndex(0);
+      setReceiveTokenIndex(0);
+      setActiveTab("deposit");
+      setAssetBalance("0");
+      setVaultBalance("0");
+    }
+  }, [address]);
+
+  // Create debounced effect for input value
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedInputValue(inputValue);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [inputValue]);
+
+  //////////////////////////////
+  // Async Actions
+  //////////////////////////////
+
+  async function handleDeposit() {
+    const config = getVaultByKey(vaultKey as VaultKey);
+    const depositTokenAddress = availableDepositTokens[depositTokenIndex].token.addresses[mainnet.id];
+    if (!depositTokenAddress) {
+      throw new Error("Deposit token address not found");
+    }
+    try {
+      setApprovalStatus("processing");
+      const depositTokenAllowance = await allowance({
+        tokenAddress: depositTokenAddress,
+        spenderAddress: config.contracts.boringVault,
+        userAddress: address as `0x${string}`,
+      });
+
+      if (depositTokenAllowance < BigInt(convertToBigIntString(inputValue))) {
+        await approve({
+          tokenAddress: depositTokenAddress,
+          spenderAddress: config.contracts.boringVault,
+          amount: BigInt(convertToBigIntString(inputValue)),
+        });
+      }
+      setApprovalStatus("success");
+    } catch (error) {
+      console.error(error);
+      setApprovalStatus("error");
+    }
+
+    try {
+      setDepositStatus("processing");
+      await VaultService.deposit({
+        vaultKey: vaultKey as VaultKey,
+        depositToken: availableDepositTokens[depositTokenIndex].token.key as TokenKey,
+        depositAmount: BigInt(convertToBigIntString(inputValue)),
+        address: address as `0x${string}`,
+      });
+      setDepositStatus("success");
+    } catch (error) {
+      console.error(error);
+      setDepositStatus("error");
+    }
+  }
+
+  async function handleWithdraw() {
+    //
+  }
+
+  //////////////////////////////
   // Derived Values
   //////////////////////////////
   // Available deposit and receive tokens for the select fields taken from the config
@@ -234,9 +328,11 @@ export function useVault() {
   } ${availableTokens[depositTokenIndex].token.symbol} / ${vaultKey}`;
 
   // Preview fee
-  const formattedPreviewFee = previewFee
-    ? `${bigIntToNumberAsString(BigInt(previewFee), { maximumFractionDigits: 4 })} ETH`
-    : "0.00 ETH";
+  const previewFeeInUsd = (BigInt(previewFee) * BigInt(ethPrice)) / BigInt(1e8);
+  const formattedPreviewFee = Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(Number(formatEther(previewFeeInUsd)));
 
   // User's asset balance that appears below the input field
   const formattedAssetBalance =
@@ -259,18 +355,18 @@ export function useVault() {
   })}`;
 
   // Receive amount in the vault asset when the deposit tab is selected
-  const receiveAmountForDeposit = (BigInt(convertToDecimals(inputValue)) * BigInt(rateInQuote)) / BigInt(1e18);
+  const receiveAmountForDeposit = (BigInt(convertToBigIntString(inputValue)) * BigInt(rateInQuote)) / BigInt(1e18);
   const formattedReceiveAmountForDeposit = `${bigIntToNumberAsString(receiveAmountForDeposit, {
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 6,
   })} ${vaultKey}`;
 
   // Receive amount in the selected asset when the withdraw tab is selected
   const receiveAmountForWithdraw =
     BigInt(rateInQuote) > BigInt(0)
-      ? (BigInt(convertToDecimals(inputValue)) * BigInt(1e18)) / BigInt(rateInQuote)
+      ? (BigInt(convertToBigIntString(inputValue)) * BigInt(1e18)) / BigInt(rateInQuote)
       : BigInt(0);
   const formattedReceiveAmountForWithdraw = `${bigIntToNumberAsString(receiveAmountForWithdraw, {
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 6,
   })} ${availableTokens[receiveTokenIndex].token.symbol}`;
   const formattedReceiveAmount =
     activeTab === "deposit" ? formattedReceiveAmountForDeposit : formattedReceiveAmountForWithdraw;
@@ -286,27 +382,40 @@ export function useVault() {
     currency: "USD",
   }).format(Number(totalTvlInUsd));
 
-  //////////////////////////////
-  // Async Actions
-  //////////////////////////////
+  // Are buttons disabled
+  const isDepositDisabled =
+    inputValue === "" ||
+    Number(inputValue) <= 0 ||
+    BigInt(assetBalance) < BigInt(convertToBigIntString(inputValue)) ||
+    approvalStatus === "processing" ||
+    depositStatus === "processing";
+
+  const isWithdrawDisabled =
+    inputValue === "" || Number(inputValue) <= 0 || BigInt(vaultBalance) < BigInt(convertToBigIntString(inputValue));
 
   return {
-    formattedExchangeRate,
-    formattedPreviewFee,
-    formattedAssetBalance,
-    formattedVaultBalance,
-    formattedVaultBalanceInUsd,
-    formattedReceiveAmount,
-    formattedVaultApy,
-    formattedVaultTvl,
+    activeTab,
+    approvalStatus,
     availableTokens,
-    loading,
-    errors,
+    changeInputValue,
     changeSelectedDepositToken,
     changeSelectedReceiveToken,
-    changeInputValue,
     changeSelectedTab,
-    activeTab,
+    depositStatus,
+    error,
+    formattedAssetBalance,
+    formattedExchangeRate,
+    formattedPreviewFee,
+    formattedReceiveAmount,
+    formattedVaultApy,
+    formattedVaultBalance,
+    formattedVaultBalanceInUsd,
+    formattedVaultTvl,
+    handleDeposit,
+    handleWithdraw,
     inputValue,
+    isDepositDisabled,
+    isWithdrawDisabled,
+    loading,
   };
 }

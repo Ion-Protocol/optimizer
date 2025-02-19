@@ -1,5 +1,5 @@
 // Converts a regular decimal number as a string into a bigint with the specified number of decimals as a string
-export function convertToDecimals(input: string, decimals: number = 18): string {
+export function convertToBigIntString(input: string, decimals: number = 18): string {
   if (parseFloat(input) === 0) {
     return "0";
   }

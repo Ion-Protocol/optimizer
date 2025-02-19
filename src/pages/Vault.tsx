@@ -1,26 +1,39 @@
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAccount } from "wagmi";
 import { useVault } from "../hooks/useVault";
 
 export function Vault() {
   const navigate = useNavigate();
+  const { isConnected } = useAccount();
+  const { openConnectModal } = useConnectModal();
+
+  const { vaultGroup, vaultKey } = useParams();
   const {
-    formattedExchangeRate,
-    formattedAssetBalance,
-    formattedVaultBalance,
-    formattedVaultBalanceInUsd,
-    formattedReceiveAmount,
-    formattedVaultApy,
-    formattedVaultTvl,
-    availableTokens,
-    loading,
     activeTab,
-    inputValue,
-    changeSelectedTab,
+    approvalStatus,
+    availableTokens,
     changeInputValue,
     changeSelectedDepositToken,
     changeSelectedReceiveToken,
+    changeSelectedTab,
+    depositStatus,
+    error,
+    formattedAssetBalance,
+    formattedExchangeRate,
+    formattedReceiveAmount,
+    formattedVaultApy,
+    formattedVaultBalance,
+    formattedVaultBalanceInUsd,
+    formattedVaultTvl,
+    formattedPreviewFee,
+    handleDeposit,
+    handleWithdraw,
+    inputValue,
+    isDepositDisabled,
+    isWithdrawDisabled,
+    loading,
   } = useVault();
-  const { vaultGroup, vaultKey } = useParams();
 
   function handleClickBack() {
     navigate(`/vault-group/${vaultGroup}`);
@@ -79,6 +92,14 @@ export function Vault() {
                 <p>Asset Balance: {formattedAssetBalance}</p>
                 <p>Exchange Rate: {formattedExchangeRate}</p>
                 <p>Receive: {formattedReceiveAmount}</p>
+                <p>Bridge Fee: {formattedPreviewFee}</p>
+                {isConnected ? (
+                  <button onClick={handleDeposit} disabled={isDepositDisabled}>
+                    {approvalStatus === "processing" || depositStatus === "processing" ? "Depositing..." : "Deposit"}
+                  </button>
+                ) : (
+                  <button onClick={openConnectModal}>Connect Wallet</button>
+                )}
               </div>
             )}
             {activeTab === "withdraw" && (
@@ -98,6 +119,22 @@ export function Vault() {
                     ))}
                   </select>
                 </div>
+                <p>Bridge Fee: {formattedPreviewFee}</p>
+                {isConnected ? (
+                  <button onClick={handleWithdraw} disabled={isWithdrawDisabled}>
+                    Withdraw
+                  </button>
+                ) : (
+                  <button onClick={openConnectModal}>Connect Wallet</button>
+                )}
+              </div>
+            )}
+            <p>Approval Status: {approvalStatus}</p>
+            <p>Deposit Status: {depositStatus}</p>
+            {error && (
+              <div>
+                <h3 style={{ color: "pink" }}>Error</h3>
+                <pre style={{ color: "pink", maxWidth: "400px", whiteSpace: "pre-wrap" }}>{error}</pre>
               </div>
             )}
           </div>
