@@ -172,4 +172,28 @@ export class VaultService {
       retryDelay: 5_000,
     });
   }
+
+  public static async bridge({
+    shareAmount,
+    bridgeData,
+    contractAddress,
+    chainId,
+    fee,
+  }: {
+    shareAmount: bigint;
+    bridgeData: BridgeData;
+    contractAddress: `0x${string}`;
+    chainId: number;
+    fee: bigint;
+  }): Promise<string> {
+    // const hash = await writeContract(wagmiConfig, {
+    //   abi: CrossChainTellerBaseAbi,
+    //   address: contractAddress,
+    //   functionName: "bridge",
+    //   args: [shareAmount, bridgeData],
+    //   chainId: chainId,
+    //   value: fee,
+    // });
+    return "";
+  }
 }

@@ -277,6 +277,7 @@ export function useVault() {
       throw new Error("Deposit token address not found");
     }
     try {
+      // 1. Check allowance
       setApprovalStatus("processing");
       const depositTokenAllowance = await allowance({
         tokenAddress: depositTokenAddress,
@@ -284,6 +285,7 @@ export function useVault() {
         userAddress: address as `0x${string}`,
       });
 
+      // 2. If allowance is insufficient, approve
       if (depositTokenAllowance < BigInt(convertToBigIntString(inputValue))) {
         await approve({
           tokenAddress: depositTokenAddress,
@@ -299,6 +301,7 @@ export function useVault() {
 
     try {
       setDepositStatus("processing");
+      // 3. Perform deposit
       await VaultService.deposit({
         vaultKey: vaultKey as VaultKey,
         depositToken: availableDepositTokens[depositTokenIndex].token.key as TokenKey,

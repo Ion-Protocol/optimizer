@@ -2,7 +2,7 @@ import { getDefaultConfig, getDefaultWallets } from "@rainbow-me/rainbowkit";
 import "@rainbow-me/rainbowkit/styles.css";
 import { bitgetWallet, ledgerWallet } from "@rainbow-me/rainbowkit/wallets";
 import { QueryClient } from "@tanstack/react-query";
-import { mainnet } from "viem/chains";
+import { mainnet, sei } from "viem/chains";
 import { fallback, http } from "wagmi";
 
 const WALLET_CONNECT_PROJECT_ID = import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID;
@@ -13,7 +13,7 @@ const { wallets } = getDefaultWallets();
 export const wagmiConfig = getDefaultConfig({
   appName: "Optimizer",
   projectId: WALLET_CONNECT_PROJECT_ID,
-  chains: [mainnet],
+  chains: [mainnet, sei],
   wallets: [
     ...wallets,
     {
