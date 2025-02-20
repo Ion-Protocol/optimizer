@@ -11,28 +11,30 @@ export function Vault() {
   const { vaultGroup, vaultKey } = useParams();
   const {
     activeTab,
-    approvalStatus,
     availableTokens,
     changeInputValue,
     changeSelectedDepositToken,
     changeSelectedReceiveToken,
     changeSelectedTab,
-    depositStatus,
+    depositing,
     error,
     formattedAssetBalance,
     formattedExchangeRate,
+    formattedPreviewFee,
     formattedReceiveAmount,
+    formattedSlippage,
     formattedVaultApy,
     formattedVaultBalance,
     formattedVaultBalanceInUsd,
     formattedVaultTvl,
-    formattedPreviewFee,
     handleDeposit,
     handleWithdraw,
     inputValue,
     isDepositDisabled,
     isWithdrawDisabled,
     loading,
+    transactionStatus,
+    withdrawing,
   } = useVault();
 
   function handleClickBack() {
@@ -95,11 +97,19 @@ export function Vault() {
                 <p>Bridge Fee: {formattedPreviewFee}</p>
                 {isConnected ? (
                   <button onClick={handleDeposit} disabled={isDepositDisabled}>
-                    {approvalStatus === "processing" || depositStatus === "processing" ? "Depositing..." : "Deposit"}
+                    {depositing ? "Depositing..." : "Deposit"}
                   </button>
                 ) : (
                   <button onClick={openConnectModal}>Connect Wallet</button>
                 )}
+                <p>
+                  {" "}
+                  Approval Status: {transactionStatus.deposit.approval.status}{" "}
+                  {transactionStatus.deposit.approval.txHash}
+                </p>
+                <p>
+                  Deposit Status: {transactionStatus.deposit.deposit.status} {transactionStatus.deposit.deposit.txHash}
+                </p>
               </div>
             )}
             {activeTab === "withdraw" && (
@@ -120,17 +130,27 @@ export function Vault() {
                   </select>
                 </div>
                 <p>Bridge Fee: {formattedPreviewFee}</p>
+                <p>Slippage: {formattedSlippage}</p>
                 {isConnected ? (
                   <button onClick={handleWithdraw} disabled={isWithdrawDisabled}>
-                    Withdraw
+                    {withdrawing ? "Withdrawing..." : "Withdraw"}
                   </button>
                 ) : (
                   <button onClick={openConnectModal}>Connect Wallet</button>
                 )}
+                <p>
+                  Bridge Status: {transactionStatus.withdraw.bridge.status} {transactionStatus.withdraw.bridge.txHash}
+                </p>
+                <p>
+                  Approval Status: {transactionStatus.withdraw.approval.status}{" "}
+                  {transactionStatus.withdraw.approval.txHash}
+                </p>
+                <p>
+                  Update Atomic Request Status: {transactionStatus.withdraw.updateAtomicRequest.status}{" "}
+                  {transactionStatus.withdraw.updateAtomicRequest.txHash}
+                </p>
               </div>
             )}
-            <p>Approval Status: {approvalStatus}</p>
-            <p>Deposit Status: {depositStatus}</p>
             {error && (
               <div>
                 <h3 style={{ color: "pink" }}>Error</h3>

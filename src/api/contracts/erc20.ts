@@ -27,6 +27,7 @@ export async function balanceOf({
       address: tokenAddress,
       functionName: "balanceOf",
       args: [balanceAddress],
+      chainId: 1,
     });
     return balanceOfAsBigInt;
   } catch (error) {
@@ -44,7 +45,7 @@ export async function balanceOf({
  * @param userAddress - The address of the user.
  * @returns The allowance as a BigInt.
  */
-export async function allowance({
+export async function checkAllowance({
   tokenAddress,
   spenderAddress,
   userAddress,
@@ -58,6 +59,7 @@ export async function allowance({
     address: tokenAddress,
     functionName: "allowance",
     args: [userAddress, spenderAddress],
+    chainId: 1,
   });
 
   return allowanceAsBigInt;
@@ -80,7 +82,7 @@ export async function approve({
   tokenAddress: `0x${string}`;
   spenderAddress: `0x${string}`;
   amount: bigint;
-}) {
+}): Promise<`0x${string}`> {
   // Simulate the transaction to catch any errors
   await simulateContract(wagmiConfig, {
     abi: erc20Abi,
@@ -90,7 +92,7 @@ export async function approve({
   });
 
   // Approve the spender
-  const hash = await writeContract(wagmiConfig, {
+  const txHash = await writeContract(wagmiConfig, {
     abi: erc20Abi,
     address: tokenAddress,
     functionName: "approve",
@@ -98,9 +100,14 @@ export async function approve({
   });
 
   // Wait for the transaction to be confirmed
-  const receipt = await waitForTransactionReceipt(wagmiConfig, {
-    hash: hash,
+  await waitForTransactionReceipt(wagmiConfig, {
+    hash: txHash,
+    timeout: 60_000,
+    confirmations: 1,
+    pollingInterval: 10_000,
+    retryCount: 5,
+    retryDelay: 5_000,
   });
 
-  return receipt;
+  return txHash;
 }

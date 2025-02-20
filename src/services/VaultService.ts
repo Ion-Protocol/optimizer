@@ -1,5 +1,8 @@
 import {
-  BridgeData,
+  ATOMIC_QUEUE_CONTRACT_ADDRESS,
+  AtomicQueueAbi,
+  CrossChainTellerBaseAbi,
+  DEFAULT_SLIPPAGE,
   getPreviewFee,
   getRateInQuoteSafe,
   getVaultByKey,
@@ -8,19 +11,26 @@ import {
   TokenKey,
   VaultKey,
 } from "@molecular-labs/nucleus";
+import { Address } from "viem";
 import { mainnet } from "viem/chains";
-import { simulateContract, waitForTransactionReceipt, writeContract } from "wagmi/actions";
-import { allowance, approve } from "../api/contracts/erc20";
-import { wagmiConfig } from "../config/wagmi";
+import { simulateContract, switchChain, waitForTransactionReceipt, writeContract } from "wagmi/actions";
+import { SupportedChainId, wagmiConfig } from "../config/wagmi";
+import { sleep } from "../utils/time";
+
+interface BridgeData {
+  chainSelector: number;
+  destinationChainReceiver: `0x${string}`;
+  bridgeFeeToken: `0x${string}`;
+  messageGas: bigint;
+  data: `0x${string}`;
+}
 
 export class VaultService {
   // Private constructor to prevent instantiation.
   private constructor() {}
 
-  private static mintSlippage = 0.005; // 0.5%
-
   private static calculateMinimumMint(depositAmount: bigint, rate: bigint): bigint {
-    const slippageAsBigInt = BigInt((this.mintSlippage * 1e18).toString());
+    const slippageAsBigInt = BigInt((DEFAULT_SLIPPAGE * 1e18).toString());
     const minimumMint = (depositAmount * BigInt(1e18)) / rate;
     const slippageAmount = (minimumMint * slippageAsBigInt) / BigInt(1e18);
     return minimumMint - slippageAmount;
@@ -84,26 +94,13 @@ export class VaultService {
     depositToken: TokenKey;
     depositAmount: bigint;
     address: `0x${string}`;
-  }) {
+  }): Promise<`0x${string}`> {
     const config = getVaultByKey(vaultKey as VaultKey);
     const bridgeChainId = config.deposit.bridgeChainIdentifier;
     const depositTokenAddress =
       config.deposit.depositTokens[mainnet.id]?.[depositToken as TokenKey]?.token.addresses[mainnet.id];
     if (!depositTokenAddress) {
       throw new Error("Deposit token address not found");
-    }
-    const depositTokenAllowance = await allowance({
-      tokenAddress: depositTokenAddress,
-      spenderAddress: config.contracts.boringVault,
-      userAddress: address,
-    });
-
-    if (depositTokenAllowance < depositAmount) {
-      await approve({
-        tokenAddress: depositTokenAddress,
-        spenderAddress: config.contracts.boringVault,
-        amount: depositAmount,
-      });
     }
 
     ////////////////////////////////
@@ -133,32 +130,53 @@ export class VaultService {
     };
 
     ////////////////////////////////
-    // Simulate
+    // Simulate and Write
     ////////////////////////////////
-    await simulateContract(wagmiConfig, {
-      abi: TellerAbi,
-      address: config.contracts.teller,
-      functionName: bridgeChainId !== 0 ? "depositAndBridge" : "deposit",
-      args:
-        bridgeChainId !== 0 && bridgeData
-          ? [depositTokenAddress, depositAmount, minimumMint, bridgeData]
-          : [depositTokenAddress, depositAmount, minimumMint],
-      value: bridgeChainId !== 0 ? previewFee : undefined,
-    });
+    let txHash: `0x${string}`;
+    if (bridgeChainId !== 0) {
+      const bridgeArgs = [
+        depositTokenAddress,
+        depositAmount,
+        minimumMint,
+        {
+          chainSelector: bridgeData.chainSelector,
+          destinationChainReceiver: bridgeData.destinationChainReceiver,
+          bridgeFeeToken: bridgeData.bridgeFeeToken,
+          messageGas: bridgeData.messageGas,
+          data: bridgeData.data,
+        },
+      ] as const;
 
-    ////////////////////////////////
-    // Write
-    ////////////////////////////////
-    const txHash = await writeContract(wagmiConfig, {
-      abi: TellerAbi,
-      address: config.contracts.teller,
-      functionName: bridgeChainId !== 0 ? "depositAndBridge" : "deposit",
-      args:
-        bridgeChainId !== 0 && bridgeData
-          ? [depositTokenAddress, depositAmount, minimumMint, bridgeData]
-          : [depositTokenAddress, depositAmount, minimumMint],
-      value: bridgeChainId !== 0 ? previewFee : undefined,
-    });
+      await simulateContract(wagmiConfig, {
+        abi: TellerAbi,
+        address: config.contracts.teller,
+        functionName: "depositAndBridge",
+        args: bridgeArgs,
+        value: previewFee,
+      });
+      txHash = await writeContract(wagmiConfig, {
+        abi: TellerAbi,
+        address: config.contracts.teller,
+        functionName: "depositAndBridge",
+        args: bridgeArgs,
+        value: previewFee,
+      });
+    } else {
+      await simulateContract(wagmiConfig, {
+        abi: TellerAbi,
+        address: config.contracts.teller,
+        functionName: "deposit",
+        args: [depositTokenAddress, depositAmount, minimumMint],
+        value: previewFee,
+      });
+      txHash = await writeContract(wagmiConfig, {
+        abi: TellerAbi,
+        address: config.contracts.teller,
+        functionName: "deposit",
+        args: [depositTokenAddress, depositAmount, minimumMint],
+        value: previewFee,
+      });
+    }
 
     ////////////////////////////////
     // Wait for Transaction Receipt
@@ -171,29 +189,138 @@ export class VaultService {
       retryCount: 5,
       retryDelay: 5_000,
     });
+
+    return txHash;
   }
 
   public static async bridge({
+    vaultKey,
+    address,
     shareAmount,
-    bridgeData,
-    contractAddress,
-    chainId,
-    fee,
+    sourceChainId,
   }: {
+    vaultKey: VaultKey;
+    address: `0x${string}`;
     shareAmount: bigint;
-    bridgeData: BridgeData;
-    contractAddress: `0x${string}`;
-    chainId: number;
-    fee: bigint;
-  }): Promise<string> {
-    // const hash = await writeContract(wagmiConfig, {
-    //   abi: CrossChainTellerBaseAbi,
-    //   address: contractAddress,
-    //   functionName: "bridge",
-    //   args: [shareAmount, bridgeData],
-    //   chainId: chainId,
-    //   value: fee,
-    // });
-    return "";
+    sourceChainId: SupportedChainId;
+  }): Promise<`0x${string}`> {
+    const config = getVaultByKey(vaultKey as VaultKey);
+    // Check if bridge is required
+    if (config.withdraw.bridgeChainIdentifier === 0) {
+      throw new Error(`Tried to bridge but the bridge chain identifier for ${vaultKey} is 0`);
+    }
+
+    // Switch to the source chain and wait for it to be switched
+    await switchChain(wagmiConfig, {
+      chainId: sourceChainId,
+    });
+    await sleep(500);
+
+    ///////////////////////////////////
+    // Bridge
+    ///////////////////////////////////
+    try {
+      const latestPreviewFee = await VaultService.getPreviewFee({
+        vaultKey: vaultKey as VaultKey,
+        address: address as `0x${string}`,
+        shareAmount: shareAmount,
+      });
+      const bridgeData = {
+        chainSelector: config.withdraw.bridgeChainIdentifier,
+        destinationChainReceiver: address as Address,
+        bridgeFeeToken: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" as Address,
+        messageGas: BigInt(100000),
+        data: "0x" as `0x${string}`,
+      };
+      await simulateContract(wagmiConfig, {
+        abi: CrossChainTellerBaseAbi,
+        address: config.contracts.teller,
+        functionName: "bridge",
+        args: [shareAmount, bridgeData],
+        chainId: sourceChainId,
+        value: latestPreviewFee,
+      });
+      const txHash = await writeContract(wagmiConfig, {
+        abi: CrossChainTellerBaseAbi,
+        address: config.contracts.teller,
+        functionName: "bridge",
+        args: [shareAmount, bridgeData],
+        chainId: sourceChainId,
+        value: latestPreviewFee,
+      });
+      await waitForTransactionReceipt(wagmiConfig, {
+        hash: txHash,
+        timeout: 60_000,
+        confirmations: 1,
+        pollingInterval: 10_000,
+        retryCount: 5,
+        retryDelay: 5_000,
+      });
+      return txHash;
+    } finally {
+      // Switch back to Ethereum chain on success or failure
+      await switchChain(wagmiConfig, {
+        chainId: mainnet.id as SupportedChainId,
+      });
+      await sleep(500);
+    }
+  }
+
+  public static async updateAtomicRequest({
+    atomicPrice,
+    chainId,
+    deadline,
+    offer,
+    offerAmount,
+    want,
+  }: {
+    atomicPrice: bigint;
+    chainId: SupportedChainId;
+    deadline: number;
+    offer: `0x${string}`;
+    offerAmount: bigint;
+    want: `0x${string}`;
+  }): Promise<`0x${string}`> {
+    await simulateContract(wagmiConfig, {
+      abi: AtomicQueueAbi,
+      address: ATOMIC_QUEUE_CONTRACT_ADDRESS,
+      functionName: "updateAtomicRequest",
+      args: [
+        offer,
+        want,
+        {
+          deadline: BigInt(deadline),
+          atomicPrice: atomicPrice,
+          offerAmount: offerAmount,
+          inSolve: false,
+        },
+      ],
+      chainId,
+    });
+    const txHash = await writeContract(wagmiConfig, {
+      abi: AtomicQueueAbi,
+      address: ATOMIC_QUEUE_CONTRACT_ADDRESS,
+      functionName: "updateAtomicRequest",
+      args: [
+        offer,
+        want,
+        {
+          deadline: BigInt(deadline),
+          atomicPrice: atomicPrice,
+          offerAmount: offerAmount,
+          inSolve: false,
+        },
+      ],
+      chainId,
+    });
+    await waitForTransactionReceipt(wagmiConfig, {
+      hash: txHash,
+      timeout: 60_000,
+      confirmations: 1,
+      pollingInterval: 10_000,
+      retryCount: 5,
+      retryDelay: 5_000,
+    });
+    return txHash;
   }
 }

@@ -1,10 +1,22 @@
-import { bigIntToNumberAsString, getEthPrice, getVaultByKey, TokenKey, VaultKey } from "@molecular-labs/nucleus";
+import {
+  ATOMIC_QUEUE_CONTRACT_ADDRESS,
+  bigIntToNumberAsString,
+  calculateRedeemAmount,
+  DEFAULT_SLIPPAGE,
+  getEthPrice,
+  getVaultByKey,
+  nucleusTokenConfig,
+  NucleusTokenKey,
+  TokenKey,
+  VaultKey,
+} from "@molecular-labs/nucleus";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { formatEther } from "viem";
+import { formatEther, parseEther } from "viem";
 import { mainnet } from "viem/chains";
 import { useAccount } from "wagmi";
-import { allowance, approve, balanceOf } from "../api/contracts/erc20";
+import { approve, balanceOf, checkAllowance } from "../api/contracts/erc20";
+import { SupportedChainId } from "../config/wagmi";
 import { ApyService } from "../services/ApyService";
 import { TvlService } from "../services/TvlService";
 import { VaultService } from "../services/VaultService";
@@ -30,13 +42,28 @@ export function useVault() {
   //////////////////////////////
   // Component State
   //////////////////////////////
+  // Form State
   const [inputValue, setInputValue] = useState<string>("");
   const [depositTokenIndex, setDepositTokenIndex] = useState<number>(0);
   const [receiveTokenIndex, setReceiveTokenIndex] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<"deposit" | "withdraw">("deposit");
-  const [loading, setLoading] = useState<boolean>(false);
-  const [approvalStatus, setApprovalStatus] = useState<TransactionStatus>("idle");
+
+  // Deposit Transaction State
+  const [depositApprovalStatus, setDepositApprovalStatus] = useState<TransactionStatus>("idle");
   const [depositStatus, setDepositStatus] = useState<TransactionStatus>("idle");
+  const [depositApprovalTxHash, setDepositApprovalTxHash] = useState<`0x${string}` | null>(null);
+  const [depositTxHash, setDepositTxHash] = useState<`0x${string}` | null>(null);
+
+  // Withdraw Transaction State
+  const [bridgeStatus, setBridgeStatus] = useState<TransactionStatus>("idle");
+  const [updateAtomicRequestApprovalStatus, setUpdateAtomicRequestApprovalStatus] = useState<TransactionStatus>("idle");
+  const [updateAtomicRequestStatus, setUpdateAtomicRequestStatus] = useState<TransactionStatus>("idle");
+  const [bridgeTxHash, setBridgeTxHash] = useState<`0x${string}` | null>(null);
+  const [approveTxHash, setApproveTxHash] = useState<`0x${string}` | null>(null);
+  const [updateAtomicRequestTxHash, setUpdateAtomicRequestTxHash] = useState<`0x${string}` | null>(null);
+
+  // Other State
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [debouncedInputValue, setDebouncedInputValue] = useState<string>(inputValue);
 
@@ -257,7 +284,7 @@ export function useVault() {
     }
   }, [address]);
 
-  // Create debounced effect for input value
+  // Create debounced effect for input value for updating the preview fee
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedInputValue(inputValue);
@@ -270,53 +297,143 @@ export function useVault() {
   // Async Actions
   //////////////////////////////
 
+  // Deposit
   async function handleDeposit() {
+    setError("");
     const config = getVaultByKey(vaultKey as VaultKey);
     const depositTokenAddress = availableDepositTokens[depositTokenIndex].token.addresses[mainnet.id];
     if (!depositTokenAddress) {
-      throw new Error("Deposit token address not found");
+      setError("Deposit token address not found");
+      return;
     }
     try {
-      // 1. Check allowance
-      setApprovalStatus("processing");
-      const depositTokenAllowance = await allowance({
+      // 1. Check allowance and approve if insufficient
+      setDepositApprovalStatus("processing");
+      const depositTokenAllowance = await checkAllowance({
         tokenAddress: depositTokenAddress,
         spenderAddress: config.contracts.boringVault,
         userAddress: address as `0x${string}`,
       });
 
-      // 2. If allowance is insufficient, approve
       if (depositTokenAllowance < BigInt(convertToBigIntString(inputValue))) {
-        await approve({
+        const approveTxHash = await approve({
           tokenAddress: depositTokenAddress,
           spenderAddress: config.contracts.boringVault,
           amount: BigInt(convertToBigIntString(inputValue)),
         });
+        setDepositApprovalTxHash(approveTxHash);
       }
-      setApprovalStatus("success");
-    } catch (error) {
+      setDepositApprovalStatus("success");
+    } catch (err) {
+      const error = err as Error;
       console.error(error);
-      setApprovalStatus("error");
+      setDepositApprovalStatus("error");
+      setError(error.message);
     }
 
+    // 2. Perform deposit
     try {
       setDepositStatus("processing");
-      // 3. Perform deposit
-      await VaultService.deposit({
+      const depositTxHash = await VaultService.deposit({
         vaultKey: vaultKey as VaultKey,
         depositToken: availableDepositTokens[depositTokenIndex].token.key as TokenKey,
         depositAmount: BigInt(convertToBigIntString(inputValue)),
         address: address as `0x${string}`,
       });
+      setDepositTxHash(depositTxHash);
       setDepositStatus("success");
-    } catch (error) {
+    } catch (err) {
+      const error = err as Error;
       console.error(error);
       setDepositStatus("error");
+      setError(error.message);
     }
   }
 
+  // Withdraw
   async function handleWithdraw() {
-    //
+    setError("");
+    if (!vaultKey) {
+      setError("Vault key not found");
+      return;
+    }
+    const shareAmount = BigInt(convertToBigIntString(inputValue));
+    const config = getVaultByKey(vaultKey as VaultKey);
+    const sourceChain = Object.values(config.withdraw.sourceChains)[0];
+
+    // 1. Bridge
+    const isBridgeRequired = config.deposit.bridgeChainIdentifier !== 0;
+    if (isBridgeRequired) {
+      try {
+        setBridgeStatus("processing");
+        const bridgeTxHash = await VaultService.bridge({
+          vaultKey: vaultKey as VaultKey,
+          address: address as `0x${string}`,
+          shareAmount,
+          sourceChainId: sourceChain.id as SupportedChainId,
+        });
+        setBridgeTxHash(bridgeTxHash);
+        setBridgeStatus("success");
+      } catch (err) {
+        const error = err as Error;
+        console.error(error);
+        setBridgeStatus("error");
+        setError(error.message);
+        return;
+      }
+    }
+
+    // 2. Check allowance on atomicQueueContractAddress and approve if insufficient
+    const shareAssetAddress =
+      nucleusTokenConfig[vaultKey as NucleusTokenKey].addresses[sourceChain.id as SupportedChainId];
+    if (!shareAssetAddress) {
+      throw new Error(`Token address not found for ${vaultKey} on chain ${sourceChain.id}`);
+    }
+    try {
+      setUpdateAtomicRequestApprovalStatus("processing");
+      const allowance = await checkAllowance({
+        tokenAddress: shareAssetAddress,
+        spenderAddress: ATOMIC_QUEUE_CONTRACT_ADDRESS,
+        userAddress: address as `0x${string}`,
+      });
+      if (allowance < shareAmount) {
+        const approveTxHash = await approve({
+          tokenAddress: shareAssetAddress,
+          spenderAddress: ATOMIC_QUEUE_CONTRACT_ADDRESS,
+          amount: shareAmount,
+        });
+        setApproveTxHash(approveTxHash);
+      }
+      setUpdateAtomicRequestApprovalStatus("success");
+    } catch (err) {
+      const error = err as Error;
+      console.error(error);
+      setUpdateAtomicRequestApprovalStatus("error");
+      setError(error.message);
+      return;
+    }
+
+    // 3. Update atomic request
+    const selectedReceiveToken = availableReceiveTokens[receiveTokenIndex].token.addresses[mainnet.id] || "0x0";
+    try {
+      setUpdateAtomicRequestStatus("processing");
+      const updateAtomicRequestTxHash = await VaultService.updateAtomicRequest({
+        offer: shareAssetAddress,
+        want: selectedReceiveToken,
+        chainId: mainnet.id as SupportedChainId,
+        deadline: Date.now() + 1000 * 60 * 60 * 24 * 3, // 3 days
+        offerAmount: shareAmount,
+        atomicPrice: BigInt(0),
+      });
+      setUpdateAtomicRequestTxHash(updateAtomicRequestTxHash);
+      setUpdateAtomicRequestStatus("success");
+    } catch (err) {
+      const error = err as Error;
+      console.error(error);
+      setUpdateAtomicRequestStatus("error");
+      setError(error.message);
+      return;
+    }
   }
 
   //////////////////////////////
@@ -364,10 +481,7 @@ export function useVault() {
   })} ${vaultKey}`;
 
   // Receive amount in the selected asset when the withdraw tab is selected
-  const receiveAmountForWithdraw =
-    BigInt(rateInQuote) > BigInt(0)
-      ? (BigInt(convertToBigIntString(inputValue)) * BigInt(1e18)) / BigInt(rateInQuote)
-      : BigInt(0);
+  const receiveAmountForWithdraw = calculateRedeemAmount(parseEther(inputValue), BigInt(rateInQuote), DEFAULT_SLIPPAGE);
   const formattedReceiveAmountForWithdraw = `${bigIntToNumberAsString(receiveAmountForWithdraw, {
     maximumFractionDigits: 6,
   })} ${availableTokens[receiveTokenIndex].token.symbol}`;
@@ -385,31 +499,81 @@ export function useVault() {
     currency: "USD",
   }).format(Number(totalTvlInUsd));
 
+  // Slippage
+  const formattedSlippage = `${(DEFAULT_SLIPPAGE * 100).toFixed(2)}%`;
+
   // Are buttons disabled
   const isDepositDisabled =
     inputValue === "" ||
     Number(inputValue) <= 0 ||
     BigInt(assetBalance) < BigInt(convertToBigIntString(inputValue)) ||
-    approvalStatus === "processing" ||
+    depositApprovalStatus === "processing" ||
     depositStatus === "processing";
 
   const isWithdrawDisabled =
     inputValue === "" || Number(inputValue) <= 0 || BigInt(vaultBalance) < BigInt(convertToBigIntString(inputValue));
 
+  const depositing = depositApprovalStatus === "processing" || depositStatus === "processing";
+  const withdrawing =
+    bridgeStatus === "processing" ||
+    updateAtomicRequestApprovalStatus === "processing" ||
+    updateAtomicRequestStatus === "processing";
+
+  // Transaction status
+  const transactionStatus = useMemo(() => {
+    return {
+      deposit: {
+        approval: {
+          txHash: depositApprovalTxHash,
+          status: depositApprovalStatus,
+        },
+        deposit: {
+          txHash: depositTxHash,
+          status: depositStatus,
+        },
+      },
+      withdraw: {
+        bridge: {
+          txHash: bridgeTxHash,
+          status: bridgeStatus,
+        },
+        approval: {
+          txHash: approveTxHash,
+          status: updateAtomicRequestApprovalStatus,
+        },
+        updateAtomicRequest: {
+          txHash: updateAtomicRequestTxHash,
+          status: updateAtomicRequestStatus,
+        },
+      },
+    };
+  }, [
+    approveTxHash,
+    bridgeStatus,
+    bridgeTxHash,
+    depositApprovalStatus,
+    depositApprovalTxHash,
+    depositStatus,
+    depositTxHash,
+    updateAtomicRequestApprovalStatus,
+    updateAtomicRequestStatus,
+    updateAtomicRequestTxHash,
+  ]);
+
   return {
     activeTab,
-    approvalStatus,
     availableTokens,
     changeInputValue,
     changeSelectedDepositToken,
     changeSelectedReceiveToken,
     changeSelectedTab,
-    depositStatus,
+    depositing,
     error,
     formattedAssetBalance,
     formattedExchangeRate,
     formattedPreviewFee,
     formattedReceiveAmount,
+    formattedSlippage,
     formattedVaultApy,
     formattedVaultBalance,
     formattedVaultBalanceInUsd,
@@ -420,5 +584,7 @@ export function useVault() {
     isDepositDisabled,
     isWithdrawDisabled,
     loading,
+    transactionStatus,
+    withdrawing,
   };
 }
