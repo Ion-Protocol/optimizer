@@ -7,15 +7,20 @@ import { AppRouter } from "./AppRouter";
 import { AppFooter } from "./components/AppFooter";
 import { AppHeader } from "./components/AppHeader";
 import { queryClient, wagmiConfig } from "./config/wagmi";
+import { BrowserRouter } from "react-router-dom";
 
 function App() {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider>
-          <AppHeader />
-          <AppRouter />
-          <AppFooter />
+          <BrowserRouter>
+            <div className="mx-auto w-[85%] min-w-[500px] max-w-[1500px]">
+              <AppHeader />
+              <AppRouter />
+              <AppFooter />
+            </div>
+          </BrowserRouter>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>

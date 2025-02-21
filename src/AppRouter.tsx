@@ -1,4 +1,4 @@
-import { BrowserRouter, Link, Routes, Route } from "react-router-dom";
+import { Link, Route, Routes } from "react-router-dom";
 import { Dashboard } from "./pages/Dashboard";
 import { Vault } from "./pages/Vault";
 import { VaultGroup } from "./pages/VaultGroup";
@@ -11,7 +11,7 @@ const routes = [
 
 export function AppRouter() {
   return (
-    <BrowserRouter>
+    <>
       <nav style={{ padding: "1rem", borderBottom: "1px solid #ccc" }}>
         <Link to="/" style={{ margin: "0 1rem" }}>
           Dashboard
@@ -25,6 +25,6 @@ export function AppRouter() {
         </Routes>
       </div>
       <footer style={{ padding: "1rem" }}></footer>
-    </BrowserRouter>
+    </>
   );
 }
