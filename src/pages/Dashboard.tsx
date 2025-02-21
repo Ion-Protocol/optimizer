@@ -4,7 +4,7 @@ import { VaultGroup } from "../types";
 import { X } from "lucide-react";
 import dashboardMaskGroup from "../assets/dashboard-mask-group.png";
 import { useState } from "react";
-import { VaultGroupCard } from "../components/VaultGroupCard";
+import { OptimizerCard } from "../components/OptimizerCard";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function Dashboard() {
@@ -88,11 +88,18 @@ export function Dashboard() {
       {/* Vault Groups Grid */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(400px,1fr))] gap-8 mt-8">
         {vaultGroupData.map((vaultGroup) => (
-          <VaultGroupCard
+          <OptimizerCard
             key={vaultGroup.vaultGroupKey}
-            vaultGroup={vaultGroup}
+            title={vaultGroup.vaultGroupKey}
+            subtitle={vaultGroup.vaultGroupKey}
+            tvl={vaultGroup.tvl}
+            apy={vaultGroup.apy}
             loading={loading}
-            onClickExplore={handleClickExplore}
+            onClickAction={() => handleClickExplore(vaultGroup.vaultGroupKey)}
+            tertiaryMetric={{
+              label: "Protocols",
+              value: <div className="flex items-center gap-1.5">{/* Protocol icons */}</div>,
+            }}
           />
         ))}
       </div>
