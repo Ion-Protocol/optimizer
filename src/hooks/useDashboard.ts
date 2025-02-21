@@ -28,6 +28,8 @@ export function useDashboard() {
     const formattedTotalTvlInUsd = new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(Number(totalTvlInUsd));
 
     return formattedTotalTvlInUsd;
@@ -45,6 +47,8 @@ export function useDashboard() {
       const formattedTvlInUsd = new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "USD",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
       }).format(Number(tvlInUsd));
 
       // APY
