@@ -17,6 +17,8 @@ export interface VaultGroupConfigItem {
 
 export enum VaultGroup {
   GroupOne = "groupone",
+  GroupTwo = "grouptwo",
+  GroupThree = "groupthree",
 }
 
 export type VaultGroupsConfig = Record<string, VaultGroupConfigItem>;

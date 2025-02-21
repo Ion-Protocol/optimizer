@@ -6,6 +6,13 @@ import { VaultGroup } from "../types";
 import { TvlService } from "../services/TvlService";
 import { ApyService } from "../services/ApyService";
 
+export interface VaultGroupItem {
+  vaultGroupKey: VaultGroup;
+  tvl: string;
+  apy: string;
+  protocols: string[];
+}
+
 export function useDashboard() {
   //////////////////
   // Raw state
@@ -13,6 +20,16 @@ export function useDashboard() {
   const [vaultGroupsState, setVaultGroupsState] = useState<{ key: VaultGroup; tvl: string; apy: number }[]>([]);
   const [ethPrice, setEthPrice] = useState<string>("0");
   const [loading, setLoading] = useState<boolean>(true);
+
+  // Initialize vault group data with config values
+  const initialVaultGroupData = useMemo(() => {
+    return Object.entries(vaultGroupsConfig).map(([key, config]) => ({
+      vaultGroupKey: key as VaultGroup,
+      tvl: "Loading...",
+      apy: "Loading...",
+      protocols: config.vaults,
+    }));
+  }, []);
 
   //////////////////
   // Derived state
@@ -28,6 +45,8 @@ export function useDashboard() {
     const formattedTotalTvlInUsd = new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(Number(totalTvlInUsd));
 
     return formattedTotalTvlInUsd;
@@ -35,16 +54,22 @@ export function useDashboard() {
 
   // Vault group data containing tvl values in usd and apy values
   const vaultGroupData = useMemo(() => {
+    if (vaultGroupsState.length === 0) {
+      return initialVaultGroupData;
+    }
+
     return vaultGroupsState.map((vaultGroup) => {
       const protocols = vaultGroupsConfig[vaultGroup.key].vaults;
 
-      // TVL
+      // TVL calculation
       const tvlAsBigInt = BigInt(vaultGroup.tvl);
       const tvlInUsdAsBigInt = (tvlAsBigInt * BigInt(ethPrice)) / BigInt(1e18);
       const tvlInUsd = tvlInUsdAsBigInt / BigInt(1e8);
       const formattedTvlInUsd = new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "USD",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
       }).format(Number(tvlInUsd));
 
       // APY
@@ -57,7 +82,7 @@ export function useDashboard() {
         protocols: protocols,
       };
     });
-  }, [vaultGroupsState, ethPrice]);
+  }, [vaultGroupsState, ethPrice, initialVaultGroupData]);
 
   ///////////////////////////////
   // Effects for async operations
@@ -69,14 +94,17 @@ export function useDashboard() {
         setLoading(true);
         const vaultGroups = Object.keys(vaultGroupsConfig) as VaultGroup[];
         const tvlPromises = vaultGroups.map(async (vaultGroup) => {
-          const tvl = await TvlService.getTvlByVaultGroup(vaultGroup);
-          const apy = await ApyService.getApyByVaultGroup(vaultGroup);
+          const [tvl, apy] = await Promise.all([
+            TvlService.getTvlByVaultGroup(vaultGroup),
+            ApyService.getApyByVaultGroup(vaultGroup),
+          ]);
           return {
             tvl: tvl.toString(),
-            apy: apy,
+            apy,
             key: vaultGroup,
           };
         });
+
         const rawVaultGroupData = await Promise.all(tvlPromises);
         setVaultGroupsState(rawVaultGroupData);
       } catch (error) {

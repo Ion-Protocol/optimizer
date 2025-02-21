@@ -37,4 +37,60 @@ export const vaultGroupsConfig: VaultGroupsConfig = {
       ],
     },
   },
+  [VaultGroup.GroupTwo]: {
+    name: "Group 2",
+    vaults: ["bobaeth", "sseth", "feth"],
+    benefits: {
+      multipliers: [
+        {
+          token: "eth",
+          value: 2.5,
+        },
+        {
+          token: "sol",
+          value: 2.0,
+        },
+      ],
+      tokens: [
+        {
+          token: "link",
+          value: 95.4,
+        },
+        {
+          token: "aave",
+          value: 72.1,
+        },
+      ],
+    },
+  },
+  [VaultGroup.GroupThree]: {
+    name: "Group 3",
+    vaults: ["bobaeth", "sseth", "feth"],
+    benefits: {
+      multipliers: [
+        {
+          token: "eth",
+          value: 1.8,
+        },
+        {
+          token: "matic",
+          value: 2.2,
+        },
+      ],
+      tokens: [
+        {
+          token: "snx",
+          value: 84.3,
+        },
+        {
+          token: "crv",
+          value: 56.7,
+        },
+        {
+          token: "bal",
+          value: 42.5,
+        },
+      ],
+    },
+  },
 };

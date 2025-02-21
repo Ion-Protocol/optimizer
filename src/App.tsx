@@ -15,7 +15,20 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider>
           <BrowserRouter>
-            <div className="mx-auto w-[85%] min-w-[500px] max-w-[1500px]">
+            <div
+              style={{
+                position: "absolute",
+                width: "403px",
+                height: "403px",
+                left: "550px",
+                top: "-283px",
+                background: "#FF6C15",
+                opacity: 1,
+                filter: "blur(500px)",
+                zIndex: 0,
+              }}
+            />
+            <div className="mx-auto w-[85%] min-w-[500px] max-w-[1500px] relative z-10">
               <AppHeader />
               <AppRouter />
               <AppFooter />
