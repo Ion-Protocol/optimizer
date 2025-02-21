@@ -4,7 +4,7 @@ import { CustomConnect } from "./CustomConnect";
 
 export function AppHeader() {
   return (
-    <header className="border border-[#DFDFDF] bg-white rounded-[18px] my-8">
+    <header className="border border-[#DFDFDF] bg-white rounded-[18px] mt-8">
       <div className="container flex h-16 items-center px-4">
         <div className="flex items-center space-x-2">
           <img
