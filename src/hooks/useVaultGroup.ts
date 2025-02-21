@@ -16,9 +16,21 @@ export function useVaultGroup() {
   //////////////////
   // Raw state
   //////////////////
+  // Initialize vaults data with config values
+  const initialVaultsData = useMemo(() => {
+    if (!vaultGroup) return [];
+    return vaultGroupsConfig[vaultGroup as VaultGroup].vaults.map((vaultKey) => ({
+      key: vaultKey,
+      tvl: "Loading...",
+      apy: "Loading...",
+      benefits: vaultGroupsConfig[vaultGroup as VaultGroup].benefits,
+      rewardsCount: vaultGroupsConfig[vaultGroup as VaultGroup].benefits.tokens.length,
+    }));
+  }, [vaultGroup]);
+
   const [vaultsState, setVaultsState] = useState<{ key: VaultKey; tvl: string; apy: number }[]>([]);
   const [ethPrice, setEthPrice] = useState<string>("0");
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   //////////////////
@@ -39,6 +51,10 @@ export function useVaultGroup() {
 
   // Vaults data including TVL, APY, benefits, and rewards count
   const vaultsData = useMemo(() => {
+    if (vaultsState.length === 0) {
+      return initialVaultsData;
+    }
+
     return vaultsState.map((vaultState) => {
       // TVL
       const tvlAsBigInt = BigInt(vaultState.tvl);
@@ -66,7 +82,7 @@ export function useVaultGroup() {
         rewardsCount,
       };
     });
-  }, [ethPrice, vaultGroup, vaultsState]);
+  }, [ethPrice, vaultGroup, vaultsState, initialVaultsData]);
 
   ///////////////////////////////
   // Effects for async operations

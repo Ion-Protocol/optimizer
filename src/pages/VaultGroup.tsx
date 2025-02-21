@@ -1,6 +1,9 @@
 import { VaultKey } from "@molecular-labs/nucleus";
 import { useNavigate, useParams } from "react-router-dom";
 import { useVaultGroup } from "../hooks/useVaultGroup";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ArrowLeft } from "lucide-react";
+import { OptimizerCard } from "@/components/OptimizerCard";
 
 export function VaultGroup() {
   const { vaultGroup } = useParams();
@@ -17,24 +20,63 @@ export function VaultGroup() {
 
   return (
     <div>
-      <button onClick={handleClickBack}>Back</button>
-      <h3>{vaultGroup}</h3>
+      {/* Back button */}
+      <button
+        onClick={handleClickBack}
+        className="flex items-center justify-center gap-2 px-4 py-3 bg-white border border-[#DFDFDF] rounded-lg h-[48px] mt-6"
+      >
+        <ArrowLeft size={20} />
+        <span className="text-sm">Back to Vaults</span>
+      </button>
+
+      {/* Title and Total Value Locked Section */}
+      <div className="flex justify-between items-center gap-8 mt-4">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-4xl font-semibold">{vaultGroup} Ecosystem Optimizers</h1>
+          <p className="text-gray-600">
+            Deposit your {vaultGroup} into an optimizer to deploy them in the Hemi ecosystem
+          </p>
+        </div>
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-[#DFDFDF]">
+          <div className="flex flex-col gap-1">
+            {loading ? (
+              <>
+                <Skeleton className="h-[32px] w-[180px]" />
+                <span className="text-gray-600">Total Value Locked</span>
+              </>
+            ) : (
+              <>
+                <span className="text-2xl font-semibold">{totalTvl}</span>
+                <span className="text-gray-600">Total Value Locked</span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Existing content */}
       {loading && <p>Loading...</p>}
       {error && <p>Error: {error}</p>}
-      <p>Total TVL: {totalTvl}</p>
-      <ul>
+
+      {/* Vault Cards Grid */}
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(400px,1fr))] gap-8 mt-8">
         {vaultsData.map((vault) => (
-          <li key={vault.key}>
-            <div>
-              <p>{vault.key}</p>
-              <p>{vault.tvl}</p>
-              <p>{vault.apy}</p>
-              <p>{vault.rewardsCount} Rewards</p>
-            </div>
-            <button onClick={() => handleClickVault(vault.key)}>Deposit</button>
-          </li>
+          <OptimizerCard
+            key={vault.key}
+            title={vault.key}
+            subtitle={`${vaultGroup} leveraged looping`}
+            tvl={vault.tvl}
+            apy={vault.apy}
+            loading={loading}
+            onClickAction={() => handleClickVault(vault.key)}
+            actionText="Deposit"
+            tertiaryMetric={{
+              label: "Rewards",
+              value: <span className="font-mono text-xl font-medium text-[#1F180F]">{vault.rewardsCount} Rewards</span>,
+            }}
+          />
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
