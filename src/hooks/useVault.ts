@@ -568,6 +568,7 @@ export function useVault() {
     changeSelectedReceiveToken,
     changeSelectedTab,
     depositing,
+    depositTokenIndex,
     error,
     formattedAssetBalance,
     formattedExchangeRate,
@@ -584,6 +585,7 @@ export function useVault() {
     isDepositDisabled,
     isWithdrawDisabled,
     loading,
+    receiveTokenIndex,
     transactionStatus,
     withdrawing,
   };
