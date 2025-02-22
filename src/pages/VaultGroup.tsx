@@ -1,9 +1,10 @@
+import { RewardsTooltip } from "@/components/RewardsTooltip";
+import { OptimizerCard } from "@/components/OptimizerCard";
+import { Skeleton } from "@/components/ui/skeleton";
 import { VaultKey } from "@molecular-labs/nucleus";
+import { ArrowLeft } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useVaultGroup } from "../hooks/useVaultGroup";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft } from "lucide-react";
-import { OptimizerCard } from "@/components/OptimizerCard";
 
 export function VaultGroup() {
   const { vaultGroup } = useParams();
@@ -71,8 +72,8 @@ export function VaultGroup() {
             onClickAction={() => handleClickVault(vault.key)}
             actionText="Deposit"
             tertiaryMetric={{
-              label: "Rewards",
-              value: <span className="font-mono text-xl font-medium text-[#1F180F]">{vault.rewardsCount} Rewards</span>,
+              label: "Benefits",
+              value: <RewardsTooltip rewardsCount={vault.rewardsCount} />,
             }}
           />
         ))}
