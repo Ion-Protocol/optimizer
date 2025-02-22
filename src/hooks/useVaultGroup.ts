@@ -44,6 +44,8 @@ export function useVaultGroup() {
     const formattedTotalTvlInUsd = new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
+      maximumFractionDigits: 0,
+      minimumFractionDigits: 0,
     }).format(Number(totalTvlInUsd));
 
     return formattedTotalTvlInUsd;
@@ -63,6 +65,8 @@ export function useVaultGroup() {
       const formattedTvlInUsd = new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "USD",
+        maximumFractionDigits: 0,
+        minimumFractionDigits: 0,
       }).format(Number(tvlInUsd));
 
       // APY
