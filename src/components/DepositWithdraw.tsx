@@ -1,14 +1,12 @@
-import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { useNavigate, useParams } from "react-router-dom";
-import { useAccount } from "wagmi";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useParams } from "react-router-dom";
 import { useVault } from "../hooks/useVault";
+import { TokenSelect } from "./TokenSelect";
 
 export function DepositWithdraw() {
-  const navigate = useNavigate();
-  const { isConnected } = useAccount();
-  const { openConnectModal } = useConnectModal();
-
-  const { vaultGroup, vaultKey } = useParams();
+  const { vaultKey } = useParams();
   const {
     activeTab,
     availableTokens,
@@ -17,12 +15,10 @@ export function DepositWithdraw() {
     changeSelectedReceiveToken,
     changeSelectedTab,
     depositing,
-    error,
+    depositTokenIndex,
     formattedAssetBalance,
     formattedExchangeRate,
-    formattedPreviewFee,
     formattedReceiveAmount,
-    formattedSlippage,
     formattedVaultApy,
     formattedVaultBalance,
     formattedVaultBalanceInUsd,
@@ -33,131 +29,133 @@ export function DepositWithdraw() {
     isDepositDisabled,
     isWithdrawDisabled,
     loading,
-    transactionStatus,
+    receiveTokenIndex,
     withdrawing,
   } = useVault();
 
-  function handleClickBack() {
-    navigate(`/vault-group/${vaultGroup}`);
-  }
-
   return (
-    <div>
-      <h1>Vault Details</h1>
-      <button onClick={handleClickBack}>Back</button>
-      <p>Viewing details for vault with key: {vaultKey}</p>
-      {loading && <p>Loading...</p>}
+    <div className="bg-[#f8f8f8] p-6 border border-[#DFDFDF] rounded-lg">
+      <div className="mx-auto max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-8 bg-white rounded-xl shadow-sm">
+        {/* Left Column - Overview */}
+        <div className="space-y-8">
+          <h2 className="text-2xl font-medium text-[#1f180f]">Overview</h2>
 
-      <div style={{ marginTop: "20px" }}>
-        <div style={{ display: "flex", gap: "100px" }}>
-          <div>
-            <p>
-              Vault Balance: {formattedVaultBalance} {vaultKey} = {formattedVaultBalanceInUsd}
-            </p>
-            <p>Vault APY: {formattedVaultApy}</p>
-            <p>Vault TVL: {formattedVaultTvl}</p>
-          </div>
-          <div>
-            <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
-              <h3>Temp Tabs</h3>
-              <button
-                onClick={() => changeSelectedTab("deposit")}
-                style={{
-                  fontWeight: activeTab === "deposit" ? "bold" : "normal",
-                  backgroundColor: activeTab === "deposit" ? "#eee" : "transparent",
-                }}
-              >
-                Deposit
-              </button>
-              <button
-                onClick={() => changeSelectedTab("withdraw")}
-                style={{
-                  fontWeight: activeTab === "withdraw" ? "bold" : "normal",
-                  backgroundColor: activeTab === "withdraw" ? "#eee" : "transparent",
-                }}
-              >
-                Withdraw
-              </button>
+          <div className="space-y-2">
+            <h3 className="text-[#4d4d4d]">Your position</h3>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-[#dfdfdf] rounded-full" />
+              <div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-medium text-[#f7931a]">{formattedVaultBalance}</span>
+                  <span className="text-xl text-[#7b7b7b]">{vaultKey}</span>
+                </div>
+                <span className="text-[#7b7b7b]">≈{formattedVaultBalanceInUsd}</span>
+              </div>
             </div>
-            {activeTab === "deposit" && (
-              <div>
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <input value={inputValue} onChange={(e) => changeInputValue(e.target.value)} />
-                  <select onChange={(e) => changeSelectedDepositToken(Number(e.target.value))}>
-                    {availableTokens.map((token, index) => (
-                      <option key={token.token.symbol} value={index}>
-                        {token.token.symbol}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <p>Asset Balance: {formattedAssetBalance}</p>
-                <p>Exchange Rate: {formattedExchangeRate}</p>
-                <p>Receive: {formattedReceiveAmount}</p>
-                <p>Bridge Fee: {formattedPreviewFee}</p>
-                {isConnected ? (
-                  <button onClick={handleDeposit} disabled={isDepositDisabled}>
-                    {depositing ? "Depositing..." : "Deposit"}
-                  </button>
-                ) : (
-                  <button onClick={openConnectModal}>Connect Wallet</button>
-                )}
-                <p>
-                  {" "}
-                  Approval Status: {transactionStatus.deposit.approval.status}{" "}
-                  {transactionStatus.deposit.approval.txHash}
-                </p>
-                <p>
-                  Deposit Status: {transactionStatus.deposit.deposit.status} {transactionStatus.deposit.deposit.txHash}
-                </p>
-              </div>
-            )}
-            {activeTab === "withdraw" && (
-              <div>
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <input value={inputValue} onChange={(e) => changeInputValue(e.target.value)} />
-                </div>
-                <p>Asset Balance: {formattedAssetBalance}</p>
-                <p>Exchange Rate: {formattedExchangeRate}</p>
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <p>Receive: {formattedReceiveAmount}</p>
-                  <select onChange={(e) => changeSelectedReceiveToken(Number(e.target.value))}>
-                    {availableTokens.map((token, index) => (
-                      <option key={token.token.symbol} value={index}>
-                        {token.token.symbol}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <p>Bridge Fee: {formattedPreviewFee}</p>
-                <p>Slippage: {formattedSlippage}</p>
-                {isConnected ? (
-                  <button onClick={handleWithdraw} disabled={isWithdrawDisabled}>
-                    {withdrawing ? "Withdrawing..." : "Withdraw"}
-                  </button>
-                ) : (
-                  <button onClick={openConnectModal}>Connect Wallet</button>
-                )}
-                <p>
-                  Bridge Status: {transactionStatus.withdraw.bridge.status} {transactionStatus.withdraw.bridge.txHash}
-                </p>
-                <p>
-                  Approval Status: {transactionStatus.withdraw.approval.status}{" "}
-                  {transactionStatus.withdraw.approval.txHash}
-                </p>
-                <p>
-                  Update Atomic Request Status: {transactionStatus.withdraw.updateAtomicRequest.status}{" "}
-                  {transactionStatus.withdraw.updateAtomicRequest.txHash}
-                </p>
-              </div>
-            )}
-            {error && (
-              <div>
-                <h3 style={{ color: "pink" }}>Error</h3>
-                <pre style={{ color: "pink", maxWidth: "400px", whiteSpace: "pre-wrap" }}>{error}</pre>
-              </div>
-            )}
           </div>
+
+          <div>
+            <h3 className="text-[#4d4d4d] mb-4">asset optimizer analytics</h3>
+            <div className="bg-[#fff8f3] p-4 rounded-lg mb-6">
+              <div className="flex flex-col">
+                <span className="text-[#cf5711] font-medium">APY</span>
+                <span className="text-2xl text-[#cf5711] font-medium">{formattedVaultApy}</span>
+              </div>
+            </div>
+
+            <div className="bg-[#f8f8f8] p-4 rounded-lg">
+              <div className="flex items-center text-[#7b7b7b]">
+                <span>TVL</span>
+              </div>
+              <span className="text-xl font-medium">{formattedVaultTvl}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column - Deposit/Withdraw Form */}
+        <div>
+          <Tabs value={activeTab} onValueChange={changeSelectedTab as (value: string) => void} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-8">
+              <TabsTrigger value="deposit" className="text-lg">
+                Deposit
+              </TabsTrigger>
+              <TabsTrigger value="withdraw" className="text-lg">
+                Withdraw
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="deposit" className="space-y-6">
+              <div>
+                <label className="text-[#4d4d4d] mb-2 block">Your deposit</label>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="0.00"
+                    className="pr-36 text-lg"
+                    value={inputValue}
+                    onChange={(e) => changeInputValue(e.target.value)}
+                  />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                    <TokenSelect
+                      tokens={availableTokens}
+                      selectedIndex={depositTokenIndex}
+                      onChange={changeSelectedDepositToken}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-2 text-sm text-[#7b7b7b]">
+                  <span>{formattedAssetBalance} available</span>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <label className="text-[#4d4d4d] block">And receive</label>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 bg-[#dfdfdf] rounded-full" />
+                  <span className="text-xl">{formattedReceiveAmount}</span>
+                </div>
+                <div className="text-sm text-[#7b7b7b]">Exchange Rate: {formattedExchangeRate}</div>
+              </div>
+
+              <Button className="w-full text-lg py-6" onClick={handleDeposit} disabled={isDepositDisabled || loading}>
+                {depositing ? "Depositing..." : "Deposit"}
+              </Button>
+            </TabsContent>
+
+            <TabsContent value="withdraw" className="space-y-6">
+              <div>
+                <label className="text-[#4d4d4d] mb-2 block">You withdraw</label>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="0.00"
+                    className="pr-32 text-lg"
+                    value={inputValue}
+                    onChange={(e) => changeInputValue(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-center gap-2 mt-2 text-sm text-[#7b7b7b]">
+                  <span>{formattedAssetBalance} available</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[#4d4d4d] mb-2 block">And receive</label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{formattedReceiveAmount}</span>
+                  <TokenSelect
+                    tokens={availableTokens}
+                    selectedIndex={receiveTokenIndex}
+                    onChange={changeSelectedReceiveToken}
+                  />
+                </div>
+              </div>
+
+              <Button className="w-full text-lg py-6" onClick={handleWithdraw} disabled={isWithdrawDisabled || loading}>
+                {withdrawing ? "Withdrawing..." : "Withdraw"}
+              </Button>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
