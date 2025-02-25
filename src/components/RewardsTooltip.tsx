@@ -1,4 +1,5 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { VaultKey } from "@molecular-labs/nucleus";
 import { Telescope } from "lucide-react";
 
 interface TokenMultiplier {
@@ -15,26 +16,21 @@ interface TokenValue {
 
 interface RewardsTooltipProps {
   rewardsCount: number;
+  apy: string;
+  vaultKey: string;
+  points: {
+    key: VaultKey;
+    name: string;
+    multiplier: number;
+  }[];
 }
 
-export function RewardsTooltip({ rewardsCount }: RewardsTooltipProps) {
-  const multipliers: TokenMultiplier[] = [
-    { symbol: "ETH", multiplier: 3.0, color: "bg-blue-500" },
-    { symbol: "BTC", multiplier: 1.5, color: "bg-orange-500" },
-  ];
-
-  const tokens: TokenValue[] = [
-    { symbol: "MKR", value: 128.2, color: "bg-emerald-500" },
-    { symbol: "TEL", value: 67.9, color: "bg-cyan-400" },
-    { symbol: "UNI", value: 48.6, color: "bg-pink-500" },
-    { symbol: "REN", value: 48.6, color: "bg-zinc-800" },
-  ];
-
+export function RewardsTooltip({ rewardsCount, apy, vaultKey, points }: RewardsTooltipProps) {
   return (
     <TooltipProvider>
       <Tooltip delayDuration={0}>
         <TooltipTrigger asChild>
-          <span className="font-mono text-xl font-sm text-[#1F180F] cursor-pointer rounded-full border border-[#DFDFDF] px-3 py-1 transition-colors hover:bg-[#FFC39E] hover:border-[#FF6C15]">
+          <span className="font-mono text-xl font-sm text-[#1F180F] cursor-pointer rounded-full border border-[#DFDFDF] px-3 py-1 transition-colors hover:bg-[#FFC39E] hover:border-[#FF6C15] whitespace-nowrap">
             {rewardsCount} Rewards
           </span>
         </TooltipTrigger>
@@ -42,30 +38,28 @@ export function RewardsTooltip({ rewardsCount }: RewardsTooltipProps) {
           <div className="max-w-sm rounded-3xl bg-white p-6 shadow-lg border border-[#DFDFDF]">
             <div className="space-y-6">
               <div>
-                <h2 className="mb-4 text-xl font-medium text-gray-900">Multipliers</h2>
+                <h2 className="mb-4 text-xl font-medium text-gray-900">Default Yield</h2>
                 <div className="space-y-3">
-                  {multipliers.map((token) => (
-                    <div key={token.symbol} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={`h-8 w-8 rounded-full ${token.color}`} />
-                        <span className="text-lg text-gray-600">{token.symbol}</span>
-                      </div>
-                      <span className="text-lg font-medium text-orange-600">×{token.multiplier.toFixed(1)}</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`h-8 w-8 rounded-full bg-orange-600`} />
+                      <span className="text-lg text-gray-600">{vaultKey}</span>
                     </div>
-                  ))}
+                    <span className="text-lg font-medium text-orange-600">{apy}</span>
+                  </div>
                 </div>
               </div>
 
               <div>
-                <h2 className="mb-4 text-xl font-medium text-gray-900">Tokens</h2>
+                <h2 className="mb-4 text-xl font-medium text-gray-900">Multipliers</h2>
                 <div className="space-y-3">
-                  {tokens.map((token) => (
-                    <div key={token.symbol} className="flex items-center justify-between">
+                  {points.map((point) => (
+                    <div key={point.key} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className={`h-8 w-8 rounded-full ${token.color}`} />
-                        <span className="text-lg text-gray-600">{token.symbol}</span>
+                        <div className={`h-8 w-8 rounded-full bg-orange-600`} />
+                        <span className="text-lg text-gray-600">{point.name}</span>
                       </div>
-                      <span className="text-lg font-medium text-orange-600">+{token.value}</span>
+                      <span className="text-lg font-medium text-orange-600">x{point.multiplier}</span>
                     </div>
                   ))}
                 </div>
