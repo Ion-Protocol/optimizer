@@ -4,25 +4,25 @@
 
 /* Font face declarations */
 @font-face {
-  font-family: "Diatype";
-  src: url("/fonts/abcdiatype/ABCDiatype-Regular-Trial.woff2") format("woff2");
+  font-family: "MonaSans";
+  src: url("/fonts/mona-sans/MonaSans-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Diatype";
-  src: url("/fonts/abcdiatype/ABCDiatype-Bold.woff2") format("woff2");
+  font-family: "Lufga";
+  src: url("/fonts/lufga/LufgaRegular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lufga";
+  src: url("/fonts/lufga/LufgaBold.ttf") format("woff2");
   font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "PP Formula";
-  src: url("/fonts/pp-formula/PPFormula-Regular.woff2") format("woff2");
-  font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
@@ -185,15 +185,13 @@
   h4,
   h5,
   h6 {
-    @apply font-['Diatype'];
+    @apply font-['Lufga'];
   }
 
   body {
-    @apply font-['PP_Formula'] bg-background text-foreground;
+    @apply font-['MonaSans'] bg-background text-foreground;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
