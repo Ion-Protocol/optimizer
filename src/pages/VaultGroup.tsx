@@ -73,7 +73,14 @@ export function VaultGroup() {
             actionText="Deposit"
             tertiaryMetric={{
               label: "Benefits",
-              value: <RewardsTooltip rewardsCount={vault.rewardsCount} />,
+              value: (
+                <RewardsTooltip
+                  rewardsCount={vault.rewardsCount}
+                  apy={vault.apy}
+                  vaultKey={vault.key}
+                  points={vault.points}
+                />
+              ),
             }}
           />
         ))}

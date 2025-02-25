@@ -1,4 +1,4 @@
-import { getEthPrice, VaultKey } from "@molecular-labs/nucleus";
+import { getEthPrice, getVaultByKey, VaultKey } from "@molecular-labs/nucleus";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { mainnet } from "viem/chains";
@@ -6,6 +6,18 @@ import { vaultGroupsConfig } from "../config/vaultGroupsConfig";
 import { ApyService } from "../services/ApyService";
 import { TvlService } from "../services/TvlService";
 import { VaultGroup } from "../types";
+
+interface VaultData {
+  key: VaultKey;
+  tvl: string;
+  apy: string;
+  benefits: {
+    multipliers: { token: string; value: number }[];
+    tokens: { token: string; value: number }[];
+  };
+  rewardsCount: number;
+  points: { key: VaultKey; name: string; multiplier: number }[];
+}
 
 export function useVaultGroup() {
   //////////////////
@@ -25,6 +37,7 @@ export function useVaultGroup() {
       apy: "Loading...",
       benefits: vaultGroupsConfig[vaultGroup as VaultGroup].benefits,
       rewardsCount: vaultGroupsConfig[vaultGroup as VaultGroup].benefits.tokens.length,
+      points: getVaultByKey(vaultKey).points,
     }));
   }, [vaultGroup]);
 
@@ -34,7 +47,7 @@ export function useVaultGroup() {
   const [error, setError] = useState<string | null>(null);
 
   //////////////////
-  // Derived state
+  // Derived values
   //////////////////
   // Total TVL
   const totalTvl = useMemo(() => {
@@ -52,12 +65,14 @@ export function useVaultGroup() {
   }, [ethPrice, vaultsState]);
 
   // Vaults data including TVL, APY, benefits, and rewards count
-  const vaultsData = useMemo(() => {
+  const vaultsData: VaultData[] = useMemo(() => {
     if (vaultsState.length === 0) {
       return initialVaultsData;
     }
 
     return vaultsState.map((vaultState) => {
+      const config = getVaultByKey(vaultState.key);
+
       // TVL
       const tvlAsBigInt = BigInt(vaultState.tvl);
       const tvlInUsdAsBigInt = (tvlAsBigInt * BigInt(ethPrice)) / BigInt(1e18);
@@ -84,6 +99,7 @@ export function useVaultGroup() {
         apy: formattedApy,
         benefits,
         rewardsCount,
+        points: config.points,
       };
     });
   }, [ethPrice, vaultGroup, vaultsState, initialVaultsData]);
