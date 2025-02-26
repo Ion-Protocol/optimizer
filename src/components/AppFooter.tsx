@@ -4,7 +4,7 @@ import XIcon from "@/assets/svgs/socials/X.svg?react";
 
 export function AppFooter() {
   return (
-    <footer className="w-full border-t bg-background">
+    <footer className="w-full bg-background">
       <div className="container px-4 md:px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Social Icons */}
