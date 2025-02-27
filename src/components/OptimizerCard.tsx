@@ -35,7 +35,7 @@ export function OptimizerCard({
         {icon || <div className="w-12 h-12 bg-[#FF6C15] rounded-[9.39px]" />}
 
         {/* Title and Subtitle */}
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col">
           <h3 className="font-mono text-2xl font-medium leading-[120%] tracking-[-0.02em] text-[#1F180F] m-0">
             {title}
           </h3>
@@ -49,7 +49,7 @@ export function OptimizerCard({
       <div className="flex flex-row gap-3 w-full">
         {/* TVL */}
         <div className="flex-1">
-          <p className="text-[#7B7B7B] text-sm mb-1.5 m-0">TVL</p>
+          <p className="text-[#7B7B7B] text-sm mb-1 m-0">TVL</p>
           {loading ? (
             <Skeleton className="h-[28px] w-[120px]" />
           ) : (
@@ -59,7 +59,7 @@ export function OptimizerCard({
 
         {/* APY */}
         <div className="flex-1">
-          <p className="text-[#7B7B7B] text-sm mb-1.5 m-0">APY</p>
+          <p className="text-[#7B7B7B] text-sm mb-1 m-0">APY</p>
           {loading ? (
             <Skeleton className="h-[28px] w-[80px]" />
           ) : (
@@ -79,7 +79,7 @@ export function OptimizerCard({
       {/* Action Button */}
       <button
         onClick={onClickAction}
-        className="w-full py-4 px-4 bg-white border border-[#DFDFDF] rounded-lg flex items-center justify-center gap-2 cursor-pointer font-inter text-base text-[#1F180F]"
+        className="w-full py-3 px-4 bg-white border border-[#DFDFDF] rounded-lg flex items-center justify-center gap-2 cursor-pointer font-inter text-base text-[#1F180F]"
       >
         {actionText}
       </button>
