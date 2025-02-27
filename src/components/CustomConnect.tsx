@@ -1,4 +1,5 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { Wallet } from "lucide-react";
 import { Button } from "./ui/button";
 
 export function CustomConnect() {
@@ -21,7 +22,12 @@ export function CustomConnect() {
           >
             {(() => {
               if (!connected) {
-                return <Button onClick={openConnectModal}>Connect Wallet</Button>;
+                return (
+                  <Button onClick={openConnectModal}>
+                    <Wallet className="mr-2 h-4 w-4" />
+                    Connect Wallet
+                  </Button>
+                );
               }
 
               return (
