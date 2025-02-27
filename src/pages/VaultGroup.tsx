@@ -27,7 +27,7 @@ export function VaultGroup() {
         className="flex items-center justify-center gap-2 px-4 py-3 bg-white border border-[#DFDFDF] rounded-lg h-[48px] mt-6"
       >
         <ArrowLeft size={20} />
-        <span className="text-sm">Back to Vaults</span>
+        <span className="text-sm">Back to Dashboard</span>
       </button>
 
       {/* Title and Total Value Locked Section */}
