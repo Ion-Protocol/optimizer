@@ -9,7 +9,7 @@ import { useVaultGroup } from "../hooks/useVaultGroup";
 export function VaultGroup() {
   const { vaultGroup } = useParams();
   const navigate = useNavigate();
-  const { vaultsData, totalTvl, loading, error } = useVaultGroup();
+  const { vaultsData, totalTvl, loading } = useVaultGroup();
 
   function handleClickVault(vault: VaultKey) {
     navigate(`/vault-group/${vaultGroup}/${vault}`);
@@ -32,9 +32,9 @@ export function VaultGroup() {
 
       {/* Title and Total Value Locked Section */}
       <div className="flex justify-between items-center gap-8 mt-4">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-4xl font-semibold">{vaultGroup} Ecosystem Optimizers</h1>
-          <p className="text-gray-600">
+        <div className="flex flex-col">
+          <h1 className="text-[40px] font-semibold">{vaultGroup} Ecosystem Optimizers</h1>
+          <p className="text-gray-600 text-[20px]">
             Deposit your {vaultGroup} into an optimizer to deploy them in the Hemi ecosystem
           </p>
         </div>
@@ -54,10 +54,6 @@ export function VaultGroup() {
           </div>
         </div>
       </div>
-
-      {/* Existing content */}
-      {loading && <p>Loading...</p>}
-      {error && <p>Error: {error}</p>}
 
       {/* Vault Cards Grid */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(400px,1fr))] gap-8 mt-8">

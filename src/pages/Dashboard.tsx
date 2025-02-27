@@ -25,7 +25,7 @@ export function Dashboard() {
     <div>
       {/* Title and Total Value Locked */}
       <div className="flex justify-between items-center py-12 gap-8">
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col">
           <h1 className="text-[40px] font-semibold">Hemi Ecosystem Optimizer</h1>
           <p className="text-gray-600 text-[20px]">
             Deposit your assets on Hemi into an optimizer to deploy them into Hemi DeFi protocols
