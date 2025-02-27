@@ -28,7 +28,7 @@ export function OptimizerCard({
   tertiaryMetric,
 }: OptimizerCardProps) {
   return (
-    <div className="flex flex-col items-start p-5 gap-6 w-full bg-white border border-[#DFDFDF] rounded-[18px]">
+    <div className="flex flex-col items-start p-5 gap-6 w-full bg-white border border-[#DFDFDF] rounded-[18px] max-w-[600px]">
       {/* Header Section */}
       <div className="flex flex-col gap-4 w-[219px]">
         {/* Icon */}
