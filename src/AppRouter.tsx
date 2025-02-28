@@ -1,4 +1,4 @@
-import { Link, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import { Dashboard } from "./pages/Dashboard";
 import { Vault } from "./pages/Vault";
 import { VaultGroup } from "./pages/VaultGroup";

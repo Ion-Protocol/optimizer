@@ -5,11 +5,6 @@ import * as TabsPrimitive from "@radix-ui/react-tabs";
 
 import { cn } from "@/lib/utils";
 
-interface TabsProps extends React.ComponentPropsWithoutRef<typeof TabsPrimitive.Root> {
-  onValueChange: (value: "deposit" | "withdraw") => void;
-  // ... other props
-}
-
 const Tabs = TabsPrimitive.Root;
 
 const TabsList = React.forwardRef<
