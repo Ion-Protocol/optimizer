@@ -50,7 +50,7 @@ export function useWithdrawals() {
       const status = capitalizeFirstLetter(withdrawal.status);
       const date = format(new Date(Number(withdrawal.created_timestamp) * 1000), "MMM dd, yyyy");
       const time = format(new Date(Number(withdrawal.created_timestamp) * 1000), "HH:mm a");
-      const amount = formatEther(BigInt(withdrawal.amount));
+      const amount = Number(formatEther(BigInt(withdrawal.amount))).toFixed(4);
       const vaultAssetSymbol = capitalizeFirstLetter(vaultKey as VaultKey);
       const depositTokens = Object.values(config.deposit.depositTokens[mainnet.id] ?? {}).map((x) => x.token);
       const wantAssetSymbol = depositTokens.find((x) => x.addresses[mainnet.id] === withdrawal.want_token)?.symbol;
