@@ -2,7 +2,7 @@ import { RewardsTooltip } from "@/components/RewardsTooltip";
 import { OptimizerCard } from "@/components/OptimizerCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VaultKey } from "@molecular-labs/nucleus";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CoinsIcon } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useVaultGroup } from "../hooks/useVaultGroup";
 
@@ -60,6 +60,7 @@ export function VaultGroup() {
         {vaultsData.map((vault) => (
           <OptimizerCard
             key={vault.key}
+            vaultKey={vault.key}
             title={vault.key}
             subtitle={`${vaultGroup} leveraged looping`}
             tvl={vault.tvl}
@@ -67,6 +68,7 @@ export function VaultGroup() {
             loading={loading}
             onClickAction={() => handleClickVault(vault.key)}
             actionText="Deposit"
+            actionIcon={CoinsIcon}
             tertiaryMetric={{
               label: "Benefits",
               value: (

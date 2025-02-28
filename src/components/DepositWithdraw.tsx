@@ -4,9 +4,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useParams } from "react-router-dom";
 import { useVault } from "../hooks/useVault";
 import { TokenSelect } from "./TokenSelect";
+import { getVaultIcon } from "../lib/getIcons";
+import { VaultKey } from "@molecular-labs/nucleus";
 
 export function DepositWithdraw() {
-  const { vaultKey } = useParams();
+  const { vaultKey } = useParams<{ vaultKey: VaultKey }>();
   const {
     activeTab,
     availableTokens,
@@ -43,7 +45,7 @@ export function DepositWithdraw() {
           <div className="mt-6">
             <h3 className="text-[#4d4d4d] text-[14px]">Your position</h3>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-[#dfdfdf] rounded-full" />
+              <img src={getVaultIcon(vaultKey) || ""} alt={`${vaultKey} icon`} className="w-12 h-12" />
               <div>
                 <div className="flex items-baseline mt-5">
                   <span className="text-[40px] font-medium text-[#CF5711]">{formattedVaultBalance}</span>
@@ -113,7 +115,7 @@ export function DepositWithdraw() {
               <div className="space-y-4">
                 <label className="text-[#4d4d4d] text-[12px] block">And receive</label>
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-[#dfdfdf] rounded-full" />
+                  <img src={getVaultIcon(vaultKey) || ""} alt={`${vaultKey} icon`} className="w-6 h-6" />
                   <span className="text-[16px]">{formattedReceiveAmount}</span>
                 </div>
                 <div className="text-[12px] text-[#7b7b7b]">Exchange Rate: {formattedExchangeRate}</div>

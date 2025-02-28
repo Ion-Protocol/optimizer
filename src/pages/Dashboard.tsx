@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useDashboard } from "../hooks/useDashboard";
 import { VaultGroup } from "../types";
-import { X } from "lucide-react";
+import { X, Map as MapIcon } from "lucide-react";
 import dashboardMaskGroup from "../assets/dashboard-mask-group.png";
 import { useState } from "react";
 import { OptimizerCard } from "../components/OptimizerCard";
@@ -96,6 +96,7 @@ export function Dashboard() {
             apy={vaultGroup.apy}
             loading={loading}
             onClickAction={() => handleClickExplore(vaultGroup.vaultGroupKey)}
+            actionIcon={MapIcon}
             tertiaryMetric={{
               label: "Protocols",
               value: <div className="flex items-center gap-1.5">{/* Protocol icons */}</div>,

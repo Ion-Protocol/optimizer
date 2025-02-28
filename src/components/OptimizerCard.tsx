@@ -1,7 +1,10 @@
+import { VaultKey } from "@molecular-labs/nucleus";
+import { LucideIcon } from "lucide-react";
 import { Skeleton } from "./ui/skeleton";
+import { getVaultIcon } from "@/lib/getIcons";
 
 interface OptimizerCardProps {
-  icon?: React.ReactNode; // Allow custom icon component
+  vaultKey?: VaultKey;
   title: string;
   subtitle: string;
   tvl: string;
@@ -9,7 +12,7 @@ interface OptimizerCardProps {
   loading: boolean;
   onClickAction: () => void;
   actionText?: string;
-  // Make the third metric configurable
+  actionIcon?: LucideIcon;
   tertiaryMetric: {
     label: string;
     value: React.ReactNode;
@@ -17,7 +20,7 @@ interface OptimizerCardProps {
 }
 
 export function OptimizerCard({
-  icon,
+  vaultKey,
   title,
   subtitle,
   tvl,
@@ -25,20 +28,25 @@ export function OptimizerCard({
   loading,
   onClickAction,
   actionText = "Explore",
+  actionIcon: ActionIcon,
   tertiaryMetric,
 }: OptimizerCardProps) {
+  const VaultIcon = getVaultIcon(vaultKey);
+
   return (
     <div className="flex flex-col items-start p-5 gap-6 w-full bg-white border border-[#DFDFDF] rounded-[18px] max-w-[600px]">
       {/* Header Section */}
       <div className="flex flex-col gap-4 w-[219px]">
         {/* Icon */}
-        {icon || <div className="w-12 h-12 bg-[#FF6C15] rounded-[9.39px]" />}
+        {VaultIcon ? (
+          <img src={VaultIcon} alt={title} className="h-12 w-12" />
+        ) : (
+          <div className="w-12 h-12 bg-[#FF6C15] rounded-[9.39px]" />
+        )}
 
         {/* Title and Subtitle */}
         <div className="flex flex-col">
-          <h3 className="font-mono text-2xl font-medium leading-[120%] tracking-[-0.02em] text-[#1F180F] m-0">
-            {title}
-          </h3>
+          <h3 className="text-2xl font-medium leading-[120%] tracking-[-0.02em] text-[#1F180F] m-0">{title}</h3>
           <p className="font-inter text-lg font-normal leading-[130%] tracking-[-0.02em] text-[#4D4D4D] m-0">
             {subtitle}
           </p>
@@ -53,7 +61,7 @@ export function OptimizerCard({
           {loading ? (
             <Skeleton className="h-[28px] w-[120px]" />
           ) : (
-            <p className="font-mono text-xl font-medium text-[#1F180F] m-0">{tvl}</p>
+            <p className="text-xl font-medium text-[#1F180F] m-0">{tvl}</p>
           )}
         </div>
 
@@ -63,7 +71,7 @@ export function OptimizerCard({
           {loading ? (
             <Skeleton className="h-[28px] w-[80px]" />
           ) : (
-            <p className="font-mono text-xl font-medium m-0 bg-gradient-to-r from-[#CF5711] to-[#6E2E09] bg-clip-text text-transparent">
+            <p className="text-xl font-medium m-0 bg-gradient-to-r from-[#CF5711] to-[#6E2E09] bg-clip-text text-transparent">
               {apy}
             </p>
           )}
@@ -81,6 +89,7 @@ export function OptimizerCard({
         onClick={onClickAction}
         className="w-full py-3 px-4 bg-white border border-[#DFDFDF] rounded-lg flex items-center justify-center gap-2 cursor-pointer font-inter text-base text-[#1F180F]"
       >
+        {ActionIcon && <ActionIcon className="h-4 w-4" />}
         {actionText}
       </button>
     </div>

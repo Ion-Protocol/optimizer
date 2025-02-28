@@ -91,7 +91,7 @@ export function useVaultGroup() {
       const benefits = vaultGroupsConfig[vaultGroup as VaultGroup].benefits;
 
       // Rewards count
-      const rewardsCount = benefits.tokens.length;
+      const rewardsCount = config.points.length;
 
       return {
         key: vaultState.key,
