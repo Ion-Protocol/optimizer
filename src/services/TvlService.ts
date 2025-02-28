@@ -1,4 +1,4 @@
-import { VaultKey, getRate, getTotalSupply, getVaultByKey } from "@molecular-labs/nucleus";
+import { VaultKey, getRate, getTotalSupply, getVaultByKey } from "@molecularlabs/nucleus-frontend";
 import { Chain } from "viem";
 import { mainnet } from "viem/chains";
 import { vaultGroupsConfig } from "../config/vaultGroupsConfig";

@@ -1,7 +1,7 @@
 import { RewardsTooltip } from "@/components/RewardsTooltip";
 import { OptimizerCard } from "@/components/OptimizerCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { VaultKey } from "@molecular-labs/nucleus";
+import { VaultKey } from "@molecularlabs/nucleus-frontend";
 import { ArrowLeft, CoinsIcon } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useVaultGroup } from "../hooks/useVaultGroup";

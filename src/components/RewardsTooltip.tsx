@@ -1,5 +1,5 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { VaultKey } from "@molecular-labs/nucleus";
+import { VaultKey } from "@molecularlabs/nucleus-frontend";
 import { Telescope } from "lucide-react";
 import { getVaultIcon } from "@/lib/getIcons";
 

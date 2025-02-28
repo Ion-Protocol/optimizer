@@ -1,4 +1,4 @@
-import { getVaultByKey, VaultKey } from "@molecular-labs/nucleus";
+import { getVaultByKey, VaultKey } from "@molecularlabs/nucleus-frontend";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { mainnet } from "viem/chains";

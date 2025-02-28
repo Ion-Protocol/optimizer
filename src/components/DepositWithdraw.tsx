@@ -5,7 +5,7 @@ import { useParams } from "react-router-dom";
 import { useVault } from "../hooks/useVault";
 import { TokenSelect } from "./TokenSelect";
 import { getVaultIcon } from "../lib/getIcons";
-import { VaultKey } from "@molecular-labs/nucleus";
+import { VaultKey } from "@molecularlabs/nucleus-frontend";
 import { useState } from "react";
 import TransactionStatusCard from "./ui/transaction-status-card";
 

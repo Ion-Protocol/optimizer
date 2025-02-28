@@ -1,4 +1,4 @@
-import { getEthPrice } from "@molecular-labs/nucleus";
+import { getEthPrice } from "@molecularlabs/nucleus-frontend";
 import { useEffect, useMemo, useState } from "react";
 import { mainnet } from "viem/chains";
 import { vaultGroupsConfig } from "../config/vaultGroupsConfig";

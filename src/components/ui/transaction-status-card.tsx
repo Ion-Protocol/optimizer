@@ -1,5 +1,5 @@
 import { getTokenIcon, getVaultIcon } from "@/lib/getIcons";
-import { VaultKey } from "@molecular-labs/nucleus";
+import { VaultKey } from "@molecularlabs/nucleus-frontend";
 import { X, RefreshCw, ArrowRight, Clock, CheckCircle } from "lucide-react";
 
 type StepStatus = "idle" | "processing" | "done" | "error";

@@ -1,4 +1,4 @@
-import { VaultKey } from "@molecular-labs/nucleus";
+import { VaultKey } from "@molecularlabs/nucleus-frontend";
 import { LucideIcon } from "lucide-react";
 import { Skeleton } from "./ui/skeleton";
 import { getVaultIcon } from "@/lib/getIcons";

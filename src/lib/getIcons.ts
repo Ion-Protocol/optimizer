@@ -1,4 +1,4 @@
-import { VaultKey } from "@molecular-labs/nucleus";
+import { VaultKey } from "@molecularlabs/nucleus-frontend";
 import BobaEthIcon from "../assets/svgs/nucleus/bobaeth.svg";
 import SSETHIcon from "../assets/svgs/nucleus/sseth.svg";
 import FETHIcon from "../assets/svgs/nucleus/feth.svg";

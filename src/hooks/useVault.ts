@@ -9,7 +9,7 @@ import {
   NucleusTokenKey,
   TokenKey,
   VaultKey,
-} from "@molecular-labs/nucleus";
+} from "@molecularlabs/nucleus-frontend";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { formatEther, parseEther } from "viem";

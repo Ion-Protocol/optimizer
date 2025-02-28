@@ -10,7 +10,7 @@ import {
   TellerAbi,
   TokenKey,
   VaultKey,
-} from "@molecular-labs/nucleus";
+} from "@molecularlabs/nucleus-frontend";
 import { Address } from "viem";
 import { mainnet } from "viem/chains";
 import { simulateContract, switchChain, waitForTransactionReceipt, writeContract } from "wagmi/actions";

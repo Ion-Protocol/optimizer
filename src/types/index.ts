@@ -1,4 +1,4 @@
-import { VaultKey } from "@molecular-labs/nucleus";
+import { VaultKey } from "@molecularlabs/nucleus-frontend";
 
 export interface VaultGroupConfigItem {
   name: string;
