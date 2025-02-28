@@ -1,18 +1,7 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { VaultKey } from "@molecular-labs/nucleus";
 import { Telescope } from "lucide-react";
-
-interface TokenMultiplier {
-  symbol: string;
-  multiplier: number;
-  color: string;
-}
-
-interface TokenValue {
-  symbol: string;
-  value: number;
-  color: string;
-}
+import { getVaultIcon } from "@/lib/getIcons";
 
 interface RewardsTooltipProps {
   rewardsCount: number;
@@ -30,8 +19,8 @@ export function RewardsTooltip({ rewardsCount, apy, vaultKey, points }: RewardsT
     <TooltipProvider>
       <Tooltip delayDuration={0}>
         <TooltipTrigger asChild>
-          <span className="font-mono text-xl font-sm text-[#1F180F] cursor-pointer rounded-full border border-[#DFDFDF] px-3 py-1 transition-colors hover:bg-[#FFC39E] hover:border-[#FF6C15] whitespace-nowrap">
-            {rewardsCount} Rewards
+          <span className="text-[20px] font-sm text-[#1F180F] cursor-pointer rounded-full border border-[#DFDFDF] px-3 py-1 transition-colors hover:bg-[#FFC39E] hover:border-[#FF6C15] whitespace-nowrap">
+            {rewardsCount} {rewardsCount === 1 ? "Reward" : "Rewards"}
           </span>
         </TooltipTrigger>
         <TooltipContent side="right" className="w-[400px] p-0 bg-transparent border-none">
@@ -42,7 +31,9 @@ export function RewardsTooltip({ rewardsCount, apy, vaultKey, points }: RewardsT
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className={`h-8 w-8 rounded-full bg-orange-600`} />
+                      {getVaultIcon(vaultKey as VaultKey) && (
+                        <img src={getVaultIcon(vaultKey as VaultKey) || ""} alt={vaultKey} className="h-8 w-8" />
+                      )}
                       <span className="text-lg text-gray-600">{vaultKey}</span>
                     </div>
                     <span className="text-lg font-medium text-orange-600">{apy}</span>

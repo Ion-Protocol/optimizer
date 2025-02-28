@@ -1,14 +1,51 @@
 import { useWithdrawals } from "../hooks/useWithdrawals";
+import { ArrowUpRight } from "lucide-react";
 
 export function Withdrawals() {
   const { withdrawals } = useWithdrawals();
 
   return (
     <div>
-      <h1>Your Transactions</h1>
-      <pre style={{ textAlign: "left", height: "500px", overflow: "auto", border: "1px solid white" }}>
-        {JSON.stringify(withdrawals, null, 2)}
-      </pre>
+      <div className="container mx-auto">
+        <h1 className="text-[#1f180f] text-3xl font-bold mb-6">Your transactions</h1>
+
+        <div
+          className="border border-[#dfdfdf] rounded-2xl overflow-hidden"
+          style={{ maxHeight: "800px", overflowY: "auto" }}
+        >
+          <div className="sticky top-0 bg-white grid grid-cols-4 p-6 border-b border-[#dfdfdf]">
+            <div className="text-[#7b7b7b] font-medium">Type</div>
+            <div className="text-[#7b7b7b] font-medium">Status</div>
+            <div className="text-[#7b7b7b] font-medium">Date & time</div>
+            <div className="text-[#7b7b7b] font-medium text-right">Amount</div>
+          </div>
+
+          {withdrawals.map((withdrawal, index) => (
+            <div key={index} className="grid grid-cols-4 p-6 border-b border-[#dfdfdf]">
+              <div className="flex items-center gap-1 text-[#1f180f] font-medium">
+                Withdrawal <ArrowUpRight className="h-4 w-4 inline" />
+              </div>
+              <div className="flex items-center">
+                <div
+                  className={`w-2.5 h-2.5 rounded-full ${
+                    withdrawal.status === "Completed" ? "bg-[#00827b]" : "bg-[#dfdfdf]"
+                  } mr-2`}
+                ></div>
+                <span className="text-[#1f180f]">{withdrawal.status}</span>
+              </div>
+              <div>
+                <div className="text-[#1f180f]">{withdrawal.date}</div>
+                <div className="text-[#7b7b7b]">{withdrawal.time}</div>
+              </div>
+              <div className="text-right">
+                <div className="text-[#1f180f] font-medium">
+                  {withdrawal.amount} {withdrawal.vaultAssetSymbol}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

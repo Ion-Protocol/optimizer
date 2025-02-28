@@ -1,6 +1,7 @@
 import { ArrowUpRightIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { CustomConnect } from "./CustomConnect";
+import optimizerImage from "../assets/images/optimizer.png";
 
 export function AppHeader() {
   return (
@@ -14,6 +15,7 @@ export function AppHeader() {
             height={32}
             className="object-contain"
           />
+          <img src={optimizerImage} alt="Optimizer Icon" width={24} height={24} className="object-contain" />
           <span className="text-lg font-semibold text-[#1F180F]">optimizer</span>
         </div>
 

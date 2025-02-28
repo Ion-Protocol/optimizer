@@ -1,17 +1,15 @@
+import { getTokenIcon } from "@/lib/getIcons";
 import { ChevronDown } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
-export function TokenSelect({
-  tokens,
-  selectedIndex,
-  onChange,
-  className,
-}: {
+interface TokenSelectProps {
   tokens: Array<{ token: { symbol: string; name: string } }>;
   selectedIndex: number;
   onChange: (index: number) => void;
   className?: string;
-}) {
+}
+
+export function TokenSelect({ tokens, selectedIndex, onChange, className }: TokenSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -25,6 +23,15 @@ export function TokenSelect({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const TokenIcon = ({ symbol }: { symbol: string }) => {
+    const iconSrc = getTokenIcon(symbol.toLowerCase());
+    return iconSrc ? (
+      <img src={iconSrc} alt={`${symbol} icon`} className="w-6 h-6 rounded-full" />
+    ) : (
+      <div className="w-6 h-6 rounded-full bg-gray-200" />
+    );
+  };
+
   return (
     <div className="relative" ref={containerRef}>
       <button
@@ -32,12 +39,7 @@ export function TokenSelect({
         className={`flex items-center gap-2 bg-white hover:bg-[#f8f8f8] px-3 py-1.5 rounded-full border ${className} z-500`}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <div
-          className="w-6 h-6 rounded-full"
-          style={{
-            backgroundColor: `hsl(${selectedIndex * 137.5}, 70%, 80%)`,
-          }}
-        />
+        <TokenIcon symbol={tokens[selectedIndex]?.token.symbol} />
         <span>{tokens[selectedIndex]?.token.symbol}</span>
         <ChevronDown size={16} className={`transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
@@ -53,12 +55,7 @@ export function TokenSelect({
                 setIsOpen(false);
               }}
             >
-              <div
-                className="w-6 h-6 rounded-full"
-                style={{
-                  backgroundColor: `hsl(${index * 137.5}, 70%, 80%)`,
-                }}
-              />
+              <TokenIcon symbol={token.token.symbol} />
               <div className="flex flex-col items-start">
                 <span className="font-medium">{token.token.symbol}</span>
                 <span className="text-sm text-gray-500">{token.token.name}</span>
