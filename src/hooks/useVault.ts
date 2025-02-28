@@ -23,7 +23,7 @@ import { VaultService } from "../services/VaultService";
 import { convertToBigIntString } from "../utils/bigint";
 import { sanitizeDepositInput } from "../utils/number";
 
-type TransactionStatus = "idle" | "processing" | "success" | "error";
+type TransactionStatus = "idle" | "processing" | "done" | "error";
 
 export function useVault() {
   //////////////////////////////
@@ -323,7 +323,7 @@ export function useVault() {
         });
         setDepositApprovalTxHash(approveTxHash);
       }
-      setDepositApprovalStatus("success");
+      setDepositApprovalStatus("done");
     } catch (err) {
       const error = err as Error;
       console.error(error);
@@ -341,7 +341,7 @@ export function useVault() {
         address: address as `0x${string}`,
       });
       setDepositTxHash(depositTxHash);
-      setDepositStatus("success");
+      setDepositStatus("done");
     } catch (err) {
       const error = err as Error;
       console.error(error);
@@ -373,7 +373,7 @@ export function useVault() {
           sourceChainId: sourceChain.id as SupportedChainId,
         });
         setBridgeTxHash(bridgeTxHash);
-        setBridgeStatus("success");
+        setBridgeStatus("done");
       } catch (err) {
         const error = err as Error;
         console.error(error);
@@ -404,7 +404,7 @@ export function useVault() {
         });
         setApproveTxHash(approveTxHash);
       }
-      setUpdateAtomicRequestApprovalStatus("success");
+      setUpdateAtomicRequestApprovalStatus("done");
     } catch (err) {
       const error = err as Error;
       console.error(error);
@@ -426,7 +426,7 @@ export function useVault() {
         atomicPrice: BigInt(0),
       });
       setUpdateAtomicRequestTxHash(updateAtomicRequestTxHash);
-      setUpdateAtomicRequestStatus("success");
+      setUpdateAtomicRequestStatus("done");
     } catch (err) {
       const error = err as Error;
       console.error(error);
