@@ -23,7 +23,7 @@ import { VaultService } from "../services/VaultService";
 import { convertToBigIntString } from "../utils/bigint";
 import { sanitizeDepositInput } from "../utils/number";
 
-type TransactionStatus = "idle" | "processing" | "success" | "error";
+type TransactionStatus = "idle" | "processing" | "done" | "error";
 
 export function useVault() {
   //////////////////////////////
@@ -297,7 +297,52 @@ export function useVault() {
   // Async Actions
   //////////////////////////////
 
-  // Deposit
+  // Add this helper function inside useVault
+  const getRequiredSteps = () => {
+    if (activeTab === "deposit") {
+      const depositTokenAddress = availableDepositTokens[depositTokenIndex].token.addresses[mainnet.id];
+      const depositAmount = BigInt(convertToBigIntString(inputValue || "0"));
+      const needsApproval = async () => {
+        if (!depositTokenAddress || !address) return false;
+        const allowance = await checkAllowance({
+          tokenAddress: depositTokenAddress,
+          spenderAddress: config.contracts.boringVault,
+          userAddress: address as `0x${string}`,
+        });
+        return allowance < depositAmount;
+      };
+
+      return {
+        approval: needsApproval,
+        deposit: true,
+      };
+    } else {
+      // Withdraw
+      const isBridgeRequired = config.deposit.bridgeChainIdentifier !== 0;
+      const shareAmount = BigInt(convertToBigIntString(inputValue || "0"));
+      const sourceChain = Object.values(config.withdraw.sourceChains)[0];
+      const shareAssetAddress =
+        nucleusTokenConfig[vaultKey as NucleusTokenKey]?.addresses[sourceChain.id as SupportedChainId];
+
+      const needsApproval = async () => {
+        if (!shareAssetAddress || !address) return false;
+        const allowance = await checkAllowance({
+          tokenAddress: shareAssetAddress,
+          spenderAddress: ATOMIC_QUEUE_CONTRACT_ADDRESS,
+          userAddress: address as `0x${string}`,
+        });
+        return allowance < shareAmount;
+      };
+
+      return {
+        bridge: isBridgeRequired,
+        approval: needsApproval,
+        updateAtomicRequest: true,
+      };
+    }
+  };
+
+  // Update handleDeposit function
   async function handleDeposit() {
     setError("");
     const config = getVaultByKey(vaultKey as VaultKey);
@@ -306,16 +351,13 @@ export function useVault() {
       setError("Deposit token address not found");
       return;
     }
-    try {
-      // 1. Check allowance and approve if insufficient
-      setDepositApprovalStatus("processing");
-      const depositTokenAllowance = await checkAllowance({
-        tokenAddress: depositTokenAddress,
-        spenderAddress: config.contracts.boringVault,
-        userAddress: address as `0x${string}`,
-      });
 
-      if (depositTokenAllowance < BigInt(convertToBigIntString(inputValue))) {
+    const steps = getRequiredSteps();
+
+    try {
+      // 1. Check and handle approval if needed
+      setDepositApprovalStatus("processing");
+      if (await steps.approval()) {
         const approveTxHash = await approve({
           tokenAddress: depositTokenAddress,
           spenderAddress: config.contracts.boringVault,
@@ -323,16 +365,9 @@ export function useVault() {
         });
         setDepositApprovalTxHash(approveTxHash);
       }
-      setDepositApprovalStatus("success");
-    } catch (err) {
-      const error = err as Error;
-      console.error(error);
-      setDepositApprovalStatus("error");
-      setError(error.message);
-    }
+      setDepositApprovalStatus("done");
 
-    // 2. Perform deposit
-    try {
+      // 2. Perform deposit
       setDepositStatus("processing");
       const depositTxHash = await VaultService.deposit({
         vaultKey: vaultKey as VaultKey,
@@ -341,31 +376,35 @@ export function useVault() {
         address: address as `0x${string}`,
       });
       setDepositTxHash(depositTxHash);
-      setDepositStatus("success");
+      setDepositStatus("done");
     } catch (err) {
       const error = err as Error;
       console.error(error);
-      setDepositStatus("error");
       setError(error.message);
+      if (depositStatus === "processing") {
+        setDepositStatus("error");
+      } else {
+        setDepositApprovalStatus("error");
+      }
     }
   }
 
-  // Withdraw
+  // Update handleWithdraw function similarly
   async function handleWithdraw() {
     setError("");
     if (!vaultKey) {
       setError("Vault key not found");
       return;
     }
-    const shareAmount = BigInt(convertToBigIntString(inputValue));
-    const config = getVaultByKey(vaultKey as VaultKey);
-    const sourceChain = Object.values(config.withdraw.sourceChains)[0];
 
-    // 1. Bridge
-    const isBridgeRequired = config.deposit.bridgeChainIdentifier !== 0;
-    if (isBridgeRequired) {
-      try {
+    const steps = getRequiredSteps();
+    const shareAmount = BigInt(convertToBigIntString(inputValue));
+
+    try {
+      // 1. Bridge if required
+      if (steps.bridge) {
         setBridgeStatus("processing");
+        const sourceChain = Object.values(config.withdraw.sourceChains)[0];
         const bridgeTxHash = await VaultService.bridge({
           vaultKey: vaultKey as VaultKey,
           address: address as `0x${string}`,
@@ -373,30 +412,20 @@ export function useVault() {
           sourceChainId: sourceChain.id as SupportedChainId,
         });
         setBridgeTxHash(bridgeTxHash);
-        setBridgeStatus("success");
-      } catch (err) {
-        const error = err as Error;
-        console.error(error);
-        setBridgeStatus("error");
-        setError(error.message);
-        return;
+        setBridgeStatus("done");
       }
-    }
 
-    // 2. Check allowance on atomicQueueContractAddress and approve if insufficient
-    const shareAssetAddress =
-      nucleusTokenConfig[vaultKey as NucleusTokenKey].addresses[sourceChain.id as SupportedChainId];
-    if (!shareAssetAddress) {
-      throw new Error(`Token address not found for ${vaultKey} on chain ${sourceChain.id}`);
-    }
-    try {
+      // 2. Handle approval if needed
       setUpdateAtomicRequestApprovalStatus("processing");
-      const allowance = await checkAllowance({
-        tokenAddress: shareAssetAddress,
-        spenderAddress: ATOMIC_QUEUE_CONTRACT_ADDRESS,
-        userAddress: address as `0x${string}`,
-      });
-      if (allowance < shareAmount) {
+      if (await steps.approval()) {
+        const sourceChain = Object.values(config.withdraw.sourceChains)[0];
+        const shareAssetAddress =
+          nucleusTokenConfig[vaultKey as NucleusTokenKey].addresses[sourceChain.id as SupportedChainId];
+
+        if (!shareAssetAddress) {
+          throw new Error("Share asset address not found");
+        }
+
         const approveTxHash = await approve({
           tokenAddress: shareAssetAddress,
           spenderAddress: ATOMIC_QUEUE_CONTRACT_ADDRESS,
@@ -404,35 +433,40 @@ export function useVault() {
         });
         setApproveTxHash(approveTxHash);
       }
-      setUpdateAtomicRequestApprovalStatus("success");
-    } catch (err) {
-      const error = err as Error;
-      console.error(error);
-      setUpdateAtomicRequestApprovalStatus("error");
-      setError(error.message);
-      return;
-    }
+      setUpdateAtomicRequestApprovalStatus("done");
 
-    // 3. Update atomic request
-    const selectedReceiveToken = availableReceiveTokens[receiveTokenIndex].token.addresses[mainnet.id] || "0x0";
-    try {
+      // 3. Update atomic request
       setUpdateAtomicRequestStatus("processing");
+      const selectedReceiveToken = availableReceiveTokens[receiveTokenIndex].token.addresses[mainnet.id] || "0x0";
+      const sourceChain = Object.values(config.withdraw.sourceChains)[0];
+      const shareAssetAddress =
+        nucleusTokenConfig[vaultKey as NucleusTokenKey].addresses[sourceChain.id as SupportedChainId];
+
+      if (!shareAssetAddress) {
+        throw new Error("Share asset address not found");
+      }
+
       const updateAtomicRequestTxHash = await VaultService.updateAtomicRequest({
         offer: shareAssetAddress,
         want: selectedReceiveToken,
         chainId: mainnet.id as SupportedChainId,
-        deadline: Date.now() + 1000 * 60 * 60 * 24 * 3, // 3 days
+        deadline: Date.now() + 1000 * 60 * 60 * 24 * 3,
         offerAmount: shareAmount,
         atomicPrice: BigInt(0),
       });
       setUpdateAtomicRequestTxHash(updateAtomicRequestTxHash);
-      setUpdateAtomicRequestStatus("success");
+      setUpdateAtomicRequestStatus("done");
     } catch (err) {
       const error = err as Error;
       console.error(error);
-      setUpdateAtomicRequestStatus("error");
       setError(error.message);
-      return;
+      if (updateAtomicRequestStatus === "processing") {
+        setUpdateAtomicRequestStatus("error");
+      } else if (updateAtomicRequestApprovalStatus === "processing") {
+        setUpdateAtomicRequestApprovalStatus("error");
+      } else {
+        setBridgeStatus("error");
+      }
     }
   }
 
