@@ -200,11 +200,15 @@ export function DepositWithdraw() {
               steps={
                 activeTab === "deposit"
                   ? [
-                      {
-                        id: "approve",
-                        label: "Approve",
-                        status: transactionStatus.deposit.approval.status,
-                      },
+                      ...(transactionStatus.deposit.approval.status !== "idle"
+                        ? [
+                            {
+                              id: "approve",
+                              label: "Approve",
+                              status: transactionStatus.deposit.approval.status,
+                            },
+                          ]
+                        : []),
                       {
                         id: "deposit",
                         label: "Deposit",
@@ -212,16 +216,24 @@ export function DepositWithdraw() {
                       },
                     ]
                   : [
-                      {
-                        id: "bridge",
-                        label: "Bridge",
-                        status: transactionStatus.withdraw.bridge.status,
-                      },
-                      {
-                        id: "approve",
-                        label: "Approve",
-                        status: transactionStatus.withdraw.approval.status,
-                      },
+                      ...(transactionStatus.withdraw.bridge.status !== "idle"
+                        ? [
+                            {
+                              id: "bridge",
+                              label: "Bridge",
+                              status: transactionStatus.withdraw.bridge.status,
+                            },
+                          ]
+                        : []),
+                      ...(transactionStatus.withdraw.approval.status !== "idle"
+                        ? [
+                            {
+                              id: "approve",
+                              label: "Approve",
+                              status: transactionStatus.withdraw.approval.status,
+                            },
+                          ]
+                        : []),
                       {
                         id: "update_request",
                         label: "Update Request",
@@ -231,10 +243,10 @@ export function DepositWithdraw() {
               }
               sendAmount={inputValue}
               receiveAmount={formattedReceiveAmount}
-              onClose={() => setIsModalOpen(false)}
-              onRefresh={() => console.log("Card refreshed")}
               sendToken={activeTab === "deposit" ? availableTokens[depositTokenIndex].token.symbol : vaultKey || ""}
               receiveToken={activeTab === "deposit" ? vaultKey || "" : availableTokens[receiveTokenIndex].token.symbol}
+              onClose={() => setIsModalOpen(false)}
+              onRefresh={() => console.log("Card refreshed")}
             />
           </div>
         </div>

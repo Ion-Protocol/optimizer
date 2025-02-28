@@ -55,6 +55,9 @@ export default function TransactionStatusCard({
   receiveToken,
   onClose,
 }: TransactionStatusCardProps) {
+  // Check if all steps are done
+  const allStepsDone = steps.every((step) => step.status === "done");
+
   // Helper function to render status indicator
   const renderStatusIndicator = (status: StepStatus) => {
     switch (status) {
@@ -112,8 +115,10 @@ export default function TransactionStatusCard({
           <X size={16} />
         </button>
         <div className="text-center">
-          <h3 className="text-[#1f180f] text-[24px] font-medium">Order Status</h3>
-          <p className="text-[#7b7b7b] text-[16px] mt-1">Transaction processing...</p>
+          <h3 className="text-[#1f180f] text-[24px] font-medium">{allStepsDone ? "Success" : "Order Status"}</h3>
+          <p className="text-[#7b7b7b] text-[16px] mt-1">
+            {allStepsDone ? "Your transaction was made with success" : "Transaction processing..."}
+          </p>
         </div>
       </div>
 
@@ -126,41 +131,57 @@ export default function TransactionStatusCard({
           </span>
         </div>
 
-        <RefreshCw size={16} className={"animate-spin"} />
+        <RefreshCw size={16} className={allStepsDone ? "" : "animate-spin"} />
 
         <div className="flex items-center flex-col gap-2">
           <TokenIcon symbol={receiveToken} />
-          <span className="text-sm font-medium text-[#1f180f] whitespace-nowrap">+{receiveAmount}</span>
+          <span className="text-sm font-medium text-[#1f180f] whitespace-nowrap">
+            +{receiveAmount} {receiveToken}
+          </span>
         </div>
       </div>
 
       {/* Steps */}
-      {steps.map((step, index) => (
-        <div
-          key={step.id}
-          className={`p-4 px-6 flex items-center justify-between ${
-            index !== steps.length - 1 ? "border-b border-[#dfdfdf]" : "pb-6"
-          }`}
-        >
-          <div className="flex items-center">
-            <div
-              className={`w-5 h-5 rounded-full flex items-center justify-center mr-2 ${
-                step.status === "done" ? "text-green-500" : "text-[#7b7b7b]"
-              }`}
-            >
-              {step.status === "done" ? (
-                <CheckCircle size={20} />
-              ) : (
-                <span className="w-4 h-4 border-2 border-[#7b7b7b] rounded-full"></span>
-              )}
+      <div className="flex flex-col">
+        {steps.map((step, index) => (
+          <div
+            key={step.id}
+            className={`p-4 px-6 flex items-center justify-between ${
+              index !== steps.length - 1 ? "border-b border-[#dfdfdf]" : ""
+            }`}
+          >
+            <div className="flex items-center">
+              <div
+                className={`w-5 h-5 rounded-full flex items-center justify-center mr-2 ${
+                  step.status === "done" ? "text-green-500" : "text-[#7b7b7b]"
+                }`}
+              >
+                {step.status === "done" ? (
+                  <CheckCircle size={20} />
+                ) : (
+                  <span className="w-4 h-4 border-2 border-[#7b7b7b] rounded-full"></span>
+                )}
+              </div>
+              <span className="text-sm text-[#1f180f]">{step.label}</span>
+              {step.status !== "idle" && <ArrowRight size={14} className="ml-1 text-[#7b7b7b]" />}
             </div>
-            <span className="text-sm text-[#1f180f]">{step.label}</span>
-            {step.status !== "idle" && <ArrowRight size={14} className="ml-1 text-[#7b7b7b]" />}
-          </div>
 
-          <div className="flex items-center">{renderStatusIndicator(step.status)}</div>
+            <div className="flex items-center">{renderStatusIndicator(step.status)}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Done Button */}
+      {allStepsDone && (
+        <div className="p-6 pt-0">
+          <button
+            onClick={onClose}
+            className="w-full h-[48px] bg-[#FF6C15] text-white rounded-lg font-medium hover:bg-[#FF6C15]/90 transition-colors"
+          >
+            Done
+          </button>
         </div>
-      ))}
+      )}
     </div>
   );
 }
