@@ -6,11 +6,76 @@ import { useVault } from "../hooks/useVault";
 import { TokenSelect } from "./TokenSelect";
 import { getVaultIcon } from "../lib/getIcons";
 import { VaultKey } from "@molecularlabs/nucleus-frontend";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TransactionStatusCard from "./ui/transaction-status-card";
+import { useAccount } from "wagmi";
+import { Wallet, X, EyeOff } from "lucide-react";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { Skeleton } from "@/components/ui/skeleton";
+
+function TransactionErrorModal({
+  error,
+  onClose,
+  activeTab,
+}: {
+  error: string;
+  onClose: () => void;
+  activeTab: string;
+}) {
+  const [showDetails, setShowDetails] = useState(true);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+      <div
+        className="w-full max-w-lg rounded-3xl bg-[#ffffff] shadow-lg max-h-[600px] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="border-b border-[#dfdfdf] p-6 relative">
+          <div className="flex flex-col items-center">
+            <h2 className="text-[24px] font-bold text-[#1f180f]">Error</h2>
+            <button onClick={onClose} className="absolute right-6 top-6 rounded-full p-1 hover:bg-[#dfdfdf]/50">
+              <X className="h-6 w-6 text-[#4d4d4d]" />
+            </button>
+          </div>
+          <p className="mt-2 text-center text-[16px] text-[#7b7b7b]">There was an error with this transaction</p>
+        </div>
+
+        {showDetails && (
+          <div className="p-6 overflow-auto">
+            <div className="rounded-lg bg-[#353535] p-6 text-[#ffffff]">
+              <div className="mb-4">
+                <div className="text-[16px] font-medium">
+                  {activeTab === "deposit" ? "Deposit failed" : "Withdraw failed"}
+                </div>
+                <div className="text-[16px] break-words overflow-auto max-h-[200px]">{error}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-4 p-6 mt-auto">
+          <button
+            onClick={onClose}
+            className="flex-1 rounded-lg bg-[#ff6c15] py-4 text-center text-[16px] font-medium text-white"
+          >
+            Close
+          </button>
+          <button
+            onClick={() => setShowDetails(!showDetails)}
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-[#dfdfdf] py-4 text-[16px] font-medium text-[#4d4d4d]"
+          >
+            <EyeOff className="h-5 w-5" />
+            {showDetails ? "Hide" : "Show"} details
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function DepositWithdraw() {
   const { vaultKey } = useParams<{ vaultKey: VaultKey }>();
+  const { address } = useAccount();
   const {
     activeTab,
     availableTokens,
@@ -32,14 +97,27 @@ export function DepositWithdraw() {
     inputValue,
     isDepositDisabled,
     isWithdrawDisabled,
-    loading,
     receiveTokenIndex,
     transactionStatus,
     withdrawing,
+    vaultMetricsLoading,
+    tokenMetricsLoading,
+    error,
+    resetTransactionStates,
   } = useVault();
 
   // Add state for modal visibility
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Add state for error modal visibility
+  const [showErrorModal, setShowErrorModal] = useState(false);
+
+  // Update useEffect to show error modal when error occurs
+  useEffect(() => {
+    if (error) {
+      setShowErrorModal(true);
+    }
+  }, [error]);
 
   function handleClickDeposit() {
     setIsModalOpen(true);
@@ -50,6 +128,18 @@ export function DepositWithdraw() {
     setIsModalOpen(true);
     handleWithdraw();
   }
+
+  // Custom connect button that matches deposit/withdraw styling
+  const CustomConnectButton = () => (
+    <ConnectButton.Custom>
+      {({ openConnectModal }) => (
+        <Button className="w-full text-[16px] py-6" onClick={openConnectModal}>
+          <Wallet className="mr-2 h-4 w-4" />
+          Connect Wallet
+        </Button>
+      )}
+    </ConnectButton.Custom>
+  );
 
   return (
     <>
@@ -64,13 +154,22 @@ export function DepositWithdraw() {
               <div className="flex items-center gap-3">
                 <img src={getVaultIcon(vaultKey) || ""} alt={`${vaultKey} icon`} className="w-12 h-12" />
                 <div>
-                  <div className="flex items-baseline mt-5">
-                    <span className="text-[40px] font-medium text-[#CF5711]">{formattedVaultBalance}</span>
-                    <span className="text-[14px] text-[#CF5711]">{vaultKey}</span>
-                  </div>
-                  <div className="-mt-1">
-                    <span className="text-[#7b7b7b] text-[14px]">≈{formattedVaultBalanceInUsd}</span>
-                  </div>
+                  {vaultMetricsLoading ? (
+                    <div className="flex flex-col gap-2">
+                      <Skeleton className="h-[52px] w-[200px]" />
+                      <Skeleton className="h-[18px] w-[140px]" />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-baseline">
+                        <span className="text-[40px] font-medium text-[#CF5711]">{formattedVaultBalance}</span>
+                        <span className="text-[14px] text-[#CF5711]">{vaultKey}</span>
+                      </div>
+                      <div className="mt-1">
+                        <span className="text-[#7b7b7b] text-[14px]">≈{formattedVaultBalanceInUsd}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -80,7 +179,11 @@ export function DepositWithdraw() {
               <div className="bg-[#fff8f3] p-4 rounded-lg mb-6 mt-2">
                 <div className="flex flex-col">
                   <span className="text-[#cf5711] text-[14px] font-medium">APY</span>
-                  <span className="text-[24px] text-[#cf5711] font-medium">{formattedVaultApy}</span>
+                  {vaultMetricsLoading ? (
+                    <Skeleton className="h-[36px] w-[120px]" />
+                  ) : (
+                    <span className="text-[24px] text-[#cf5711] font-medium">{formattedVaultApy}</span>
+                  )}
                 </div>
               </div>
 
@@ -88,7 +191,11 @@ export function DepositWithdraw() {
                 <div className="flex items-center text-[#7b7b7b] text-[14px]">
                   <span>TVL</span>
                 </div>
-                <span className="text-[16px] font-medium">{formattedVaultTvl}</span>
+                {vaultMetricsLoading ? (
+                  <Skeleton className="h-[22px] w-[160px]" />
+                ) : (
+                  <span className="text-[16px] font-medium">{formattedVaultTvl}</span>
+                )}
               </div>
             </div>
           </div>
@@ -125,7 +232,11 @@ export function DepositWithdraw() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mt-2 text-sm text-[#7b7b7b]">
-                    <span>{formattedAssetBalance} available</span>
+                    {tokenMetricsLoading ? (
+                      <Skeleton className="h-[20px] w-[120px]" />
+                    ) : (
+                      <span>{formattedAssetBalance} available</span>
+                    )}
                   </div>
                 </div>
 
@@ -133,18 +244,28 @@ export function DepositWithdraw() {
                   <label className="text-[#4d4d4d] text-[12px] block">And receive</label>
                   <div className="flex items-center gap-2">
                     <img src={getVaultIcon(vaultKey) || ""} alt={`${vaultKey} icon`} className="w-6 h-6" />
-                    <span className="text-[16px]">{formattedReceiveAmount}</span>
+                    {tokenMetricsLoading ? (
+                      <Skeleton className="h-[24px] w-[120px]" />
+                    ) : (
+                      <span className="text-[16px]">{formattedReceiveAmount}</span>
+                    )}
                   </div>
-                  <div className="text-[12px] text-[#7b7b7b]">Exchange Rate: {formattedExchangeRate}</div>
+                  <div className="text-[12px] text-[#7b7b7b]">
+                    {tokenMetricsLoading ? (
+                      <Skeleton className="h-[16px] w-[180px]" />
+                    ) : (
+                      `Exchange Rate: ${formattedExchangeRate}`
+                    )}
+                  </div>
                 </div>
 
-                <Button
-                  className="w-full text-[16px] py-6"
-                  onClick={handleClickDeposit}
-                  disabled={isDepositDisabled || loading}
-                >
-                  {depositing ? "Depositing..." : "Deposit"}
-                </Button>
+                {address ? (
+                  <Button className="w-full text-[16px] py-6" onClick={handleClickDeposit} disabled={isDepositDisabled}>
+                    {depositing ? "Depositing..." : "Deposit"}
+                  </Button>
+                ) : (
+                  <CustomConnectButton />
+                )}
               </TabsContent>
 
               <TabsContent value="withdraw" className="space-y-6">
@@ -167,7 +288,11 @@ export function DepositWithdraw() {
                 <div>
                   <label className="text-[#4d4d4d] text-[12px] mb-2 block">And receive</label>
                   <div className="flex items-center gap-2">
-                    <span className="text-[16px]">{formattedReceiveAmount}</span>
+                    {tokenMetricsLoading ? (
+                      <Skeleton className="h-[24px] w-[120px]" />
+                    ) : (
+                      <span className="text-[16px]">{formattedReceiveAmount}</span>
+                    )}
                     <TokenSelect
                       tokens={availableTokens}
                       selectedIndex={receiveTokenIndex}
@@ -176,21 +301,25 @@ export function DepositWithdraw() {
                   </div>
                 </div>
 
-                <Button
-                  className="w-full text-[16px] py-6"
-                  onClick={handleClickWithdraw}
-                  disabled={isWithdrawDisabled || loading}
-                >
-                  {withdrawing ? "Withdrawing..." : "Withdraw"}
-                </Button>
+                {address ? (
+                  <Button
+                    className="w-full text-[16px] py-6"
+                    onClick={handleClickWithdraw}
+                    disabled={isWithdrawDisabled}
+                  >
+                    {withdrawing ? "Withdrawing..." : "Withdraw"}
+                  </Button>
+                ) : (
+                  <CustomConnectButton />
+                )}
               </TabsContent>
             </Tabs>
           </div>
         </div>
       </div>
 
-      {/* Modal Implementation */}
-      {isModalOpen && (
+      {/* Replace the existing modal implementation with this */}
+      {isModalOpen && !error && (
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
           onClick={() => setIsModalOpen(false)}
@@ -250,6 +379,19 @@ export function DepositWithdraw() {
             />
           </div>
         </div>
+      )}
+
+      {/* Add error modal */}
+      {showErrorModal && error && (
+        <TransactionErrorModal
+          error={error}
+          activeTab={activeTab}
+          onClose={() => {
+            setShowErrorModal(false);
+            setIsModalOpen(false);
+            resetTransactionStates();
+          }}
+        />
       )}
     </>
   );

@@ -19,7 +19,7 @@ export function RewardsTooltip({ rewardsCount, apy, vaultKey, points }: RewardsT
     <TooltipProvider>
       <Tooltip delayDuration={0}>
         <TooltipTrigger asChild>
-          <span className="text-[20px] font-sm text-[#1F180F] cursor-pointer rounded-full border border-[#DFDFDF] px-3 py-1 transition-colors hover:bg-[#FFC39E] hover:border-[#FF6C15] whitespace-nowrap">
+          <span className="flex items-center justify-center px-2 py-1 text-[20px] font-sm text-[#1F180F] cursor-pointer rounded-[50px] bg-[#F8F8F8] border border-transparent hover:border-[#BEBEBE] hover:bg-[#F7F7F7] active:bg-[#EFEFEF] transition-colors whitespace-nowrap">
             {rewardsCount} {rewardsCount === 1 ? "Reward" : "Rewards"}
           </span>
         </TooltipTrigger>

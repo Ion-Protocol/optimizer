@@ -135,9 +135,7 @@ export default function TransactionStatusCard({
 
         <div className="flex items-center flex-col gap-2">
           <TokenIcon symbol={receiveToken} />
-          <span className="text-sm font-medium text-[#1f180f] whitespace-nowrap">
-            +{receiveAmount} {receiveToken}
-          </span>
+          <span className="text-sm font-medium text-[#1f180f] whitespace-nowrap">+{receiveAmount}</span>
         </div>
       </div>
 

@@ -30,10 +30,15 @@ export function useWithdrawals() {
   // Effects for Loading Data
   //////////////////////////////
   useEffect(() => {
+    if (!address) {
+      setWithdrawalsState([]);
+      return;
+    }
+
     async function fetchData() {
-      if (!address || !vaultAddress) return;
+      if (!vaultAddress) return;
       const withdrawals = await fetchWithdrawals({
-        user: address,
+        user: address as `0x${string}`,
         vaultAddress: vaultAddress,
         chainId: mainnet.id,
       });
