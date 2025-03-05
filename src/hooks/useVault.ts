@@ -321,6 +321,26 @@ export function useVault() {
     }
   };
 
+  // Add this function to reset transaction states
+  function resetTransactionStates() {
+    // Reset deposit states
+    setDepositApprovalStatus("idle");
+    setDepositStatus("idle");
+    setDepositApprovalTxHash(null);
+    setDepositTxHash(null);
+
+    // Reset withdraw states
+    setBridgeStatus("idle");
+    setUpdateAtomicRequestApprovalStatus("idle");
+    setUpdateAtomicRequestStatus("idle");
+    setBridgeTxHash(null);
+    setApproveTxHash(null);
+    setUpdateAtomicRequestTxHash(null);
+
+    // Reset error
+    setError("");
+  }
+
   // Update handleDeposit function
   async function handleDeposit() {
     setError("");
@@ -328,6 +348,7 @@ export function useVault() {
     const depositTokenAddress = availableDepositTokens[depositTokenIndex].token.addresses[mainnet.id];
     if (!depositTokenAddress) {
       setError("Deposit token address not found");
+      resetTransactionStates();
       return;
     }
 
@@ -373,6 +394,7 @@ export function useVault() {
     setError("");
     if (!vaultKey) {
       setError("Vault key not found");
+      resetTransactionStates();
       return;
     }
 
@@ -526,11 +548,19 @@ export function useVault() {
   const isWithdrawDisabled =
     inputValue === "" || Number(inputValue) <= 0 || BigInt(vaultBalance) < BigInt(convertToBigIntString(inputValue));
 
-  const depositing = depositApprovalStatus === "processing" || depositStatus === "processing";
+  // Update these derived values to check for error states
+  const depositing =
+    (depositApprovalStatus === "processing" || depositStatus === "processing") &&
+    depositApprovalStatus !== "error" &&
+    depositStatus !== "error";
+
   const withdrawing =
-    bridgeStatus === "processing" ||
-    updateAtomicRequestApprovalStatus === "processing" ||
-    updateAtomicRequestStatus === "processing";
+    (bridgeStatus === "processing" ||
+      updateAtomicRequestApprovalStatus === "processing" ||
+      updateAtomicRequestStatus === "processing") &&
+    bridgeStatus !== "error" &&
+    updateAtomicRequestApprovalStatus !== "error" &&
+    updateAtomicRequestStatus !== "error";
 
   // Transaction status
   const transactionStatus = useMemo(() => {
@@ -602,5 +632,6 @@ export function useVault() {
     withdrawing,
     vaultMetricsLoading,
     tokenMetricsLoading,
+    resetTransactionStates,
   };
 }
