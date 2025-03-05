@@ -87,7 +87,7 @@ export function OptimizerCard({
       {/* Action Button */}
       <button
         onClick={onClickAction}
-        className="w-full py-3 px-4 bg-white border border-[#DFDFDF] rounded-lg flex items-center justify-center gap-2 cursor-pointer font-inter text-base text-[#1F180F]"
+        className="w-full py-3 px-4 bg-white border border-[#DFDFDF] rounded-lg flex items-center justify-center gap-2 cursor-pointer font-inter text-base text-[#1F180F] transition-colors hover:border-[#BEBEBE] hover:bg-[#F7F7F7] active:border-[#A0A0A0] active:bg-[#EFEFEF]"
       >
         {ActionIcon && <ActionIcon className="h-4 w-4" />}
         {actionText}

@@ -16,7 +16,7 @@ export function Vault() {
       {/* Back button */}
       <button
         onClick={handleClickBack}
-        className="flex items-center justify-center gap-2 px-4 py-3 bg-white border border-[#DFDFDF] rounded-lg h-[48px] my-6"
+        className="flex items-center justify-center gap-2 px-4 py-3 bg-white border border-[#DFDFDF] rounded-lg h-[48px] my-6 transition-colors hover:border-[#BEBEBE] hover:bg-[#F7F7F7] active:border-[#A0A0A0] active:bg-[#EFEFEF]"
       >
         <ArrowLeft size={20} />
         <span className="text-sm">Back to Vaults</span>

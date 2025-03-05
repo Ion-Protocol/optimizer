@@ -8,9 +8,13 @@ import { getVaultIcon } from "../lib/getIcons";
 import { VaultKey } from "@molecularlabs/nucleus-frontend";
 import { useState } from "react";
 import TransactionStatusCard from "./ui/transaction-status-card";
+import { useAccount } from "wagmi";
+import { Wallet } from "lucide-react";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 export function DepositWithdraw() {
   const { vaultKey } = useParams<{ vaultKey: VaultKey }>();
+  const { address } = useAccount();
   const {
     activeTab,
     availableTokens,
@@ -50,6 +54,18 @@ export function DepositWithdraw() {
     setIsModalOpen(true);
     handleWithdraw();
   }
+
+  // Custom connect button that matches deposit/withdraw styling
+  const CustomConnectButton = () => (
+    <ConnectButton.Custom>
+      {({ openConnectModal }) => (
+        <Button className="w-full text-[16px] py-6" onClick={openConnectModal}>
+          <Wallet className="mr-2 h-4 w-4" />
+          Connect Wallet
+        </Button>
+      )}
+    </ConnectButton.Custom>
+  );
 
   return (
     <>
@@ -138,13 +154,17 @@ export function DepositWithdraw() {
                   <div className="text-[12px] text-[#7b7b7b]">Exchange Rate: {formattedExchangeRate}</div>
                 </div>
 
-                <Button
-                  className="w-full text-[16px] py-6"
-                  onClick={handleClickDeposit}
-                  disabled={isDepositDisabled || loading}
-                >
-                  {depositing ? "Depositing..." : "Deposit"}
-                </Button>
+                {address ? (
+                  <Button
+                    className="w-full text-[16px] py-6"
+                    onClick={handleClickDeposit}
+                    disabled={isDepositDisabled || loading}
+                  >
+                    {depositing ? "Depositing..." : "Deposit"}
+                  </Button>
+                ) : (
+                  <CustomConnectButton />
+                )}
               </TabsContent>
 
               <TabsContent value="withdraw" className="space-y-6">
@@ -176,13 +196,17 @@ export function DepositWithdraw() {
                   </div>
                 </div>
 
-                <Button
-                  className="w-full text-[16px] py-6"
-                  onClick={handleClickWithdraw}
-                  disabled={isWithdrawDisabled || loading}
-                >
-                  {withdrawing ? "Withdrawing..." : "Withdraw"}
-                </Button>
+                {address ? (
+                  <Button
+                    className="w-full text-[16px] py-6"
+                    onClick={handleClickWithdraw}
+                    disabled={isWithdrawDisabled || loading}
+                  >
+                    {withdrawing ? "Withdrawing..." : "Withdraw"}
+                  </Button>
+                ) : (
+                  <CustomConnectButton />
+                )}
               </TabsContent>
             </Tabs>
           </div>
