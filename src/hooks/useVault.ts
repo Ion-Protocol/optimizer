@@ -490,13 +490,13 @@ export function useVault() {
   // Receive amount in the vault asset when the deposit tab is selected
   const receiveAmountForDeposit = (BigInt(convertToBigIntString(inputValue)) * BigInt(rateInQuote)) / BigInt(1e18);
   const formattedReceiveAmountForDeposit = `${bigIntToNumberAsString(receiveAmountForDeposit, {
-    maximumFractionDigits: 6,
+    maximumFractionDigits: 4,
   })} ${vaultKey}`;
 
   // Receive amount in the selected asset when the withdraw tab is selected
   const receiveAmountForWithdraw = calculateRedeemAmount(parseEther(inputValue), BigInt(rateInQuote), DEFAULT_SLIPPAGE);
   const formattedReceiveAmountForWithdraw = `${bigIntToNumberAsString(receiveAmountForWithdraw, {
-    maximumFractionDigits: 6,
+    maximumFractionDigits: 4,
   })} ${availableTokens[receiveTokenIndex].token.symbol}`;
   const formattedReceiveAmount =
     activeTab === "deposit" ? formattedReceiveAmountForDeposit : formattedReceiveAmountForWithdraw;
