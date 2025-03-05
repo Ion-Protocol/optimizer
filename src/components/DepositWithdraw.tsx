@@ -188,11 +188,7 @@ export function DepositWithdraw() {
                 </div>
 
                 {address ? (
-                  <Button
-                    className="w-full text-[16px] py-6"
-                    onClick={handleClickDeposit}
-                    disabled={isDepositDisabled || tokenMetricsLoading}
-                  >
+                  <Button className="w-full text-[16px] py-6" onClick={handleClickDeposit} disabled={isDepositDisabled}>
                     {depositing ? "Depositing..." : "Deposit"}
                   </Button>
                 ) : (
@@ -237,7 +233,7 @@ export function DepositWithdraw() {
                   <Button
                     className="w-full text-[16px] py-6"
                     onClick={handleClickWithdraw}
-                    disabled={isWithdrawDisabled || tokenMetricsLoading}
+                    disabled={isWithdrawDisabled}
                   >
                     {withdrawing ? "Withdrawing..." : "Withdraw"}
                   </Button>
