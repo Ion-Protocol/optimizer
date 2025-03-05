@@ -63,9 +63,15 @@ export function useVault() {
   const [updateAtomicRequestTxHash, setUpdateAtomicRequestTxHash] = useState<`0x${string}` | null>(null);
 
   // Other State
-  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [debouncedInputValue, setDebouncedInputValue] = useState<string>(inputValue);
+
+  // Add specific loading states for different data types
+  const [vaultMetricsLoading, setVaultMetricsLoading] = useState<boolean>(true);
+  const [tokenMetricsLoading, setTokenMetricsLoading] = useState<boolean>(true);
+
+  // Add cache at the component level
+  const [tokenDataCache, setTokenDataCache] = useState<Record<string, { rate: string; balance: string }>>({});
 
   //////////////////////////////
   // Component Actions
@@ -108,65 +114,80 @@ export function useVault() {
 
   // Data that changes when the selected deposit token changes
   useEffect(() => {
-    // Rate in quote: The exchange rate between the selected deposit asset and the vault asset
-    const fetchRateInQuote = async () => {
-      const tokenIndex = activeTab === "deposit" ? depositTokenIndex : receiveTokenIndex;
+    const fetchTokenData = async () => {
       try {
+        const tokenIndex = activeTab === "deposit" ? depositTokenIndex : receiveTokenIndex;
         const availableTokens = activeTab === "deposit" ? availableDepositTokens : availableReceiveTokens;
-        const rate = await VaultService.getRateInQuote(
-          vaultKey as VaultKey,
-          availableTokens[tokenIndex].token.key as TokenKey
-        );
-        setRateInQuote(rate.toString());
+        const tokenAddress = availableDepositTokens[depositTokenIndex].token.addresses[mainnet.id];
+
+        if (!tokenAddress || !address) {
+          setAssetBalance("0");
+          return;
+        }
+
+        // Create cache key
+        const cacheKey = `${activeTab}-${tokenIndex}-${address}`;
+
+        // Check cache first
+        if (tokenDataCache[cacheKey]) {
+          setRateInQuote(tokenDataCache[cacheKey].rate);
+          setAssetBalance(tokenDataCache[cacheKey].balance);
+          return;
+        }
+
+        // Only set loading if we need to fetch new data
+        setTokenMetricsLoading(true);
+
+        const [rateResult, balanceResult] = await Promise.all([
+          VaultService.getRateInQuote(vaultKey as VaultKey, availableTokens[tokenIndex].token.key as TokenKey),
+          balanceOf({
+            balanceAddress: address as `0x${string}`,
+            tokenAddress,
+            chainId: mainnet.id,
+          }),
+        ]);
+
+        // Update cache
+        setTokenDataCache((prev) => ({
+          ...prev,
+          [cacheKey]: {
+            rate: rateResult.toString(),
+            balance: balanceResult.toString(),
+          },
+        }));
+
+        setRateInQuote(rateResult.toString());
+        setAssetBalance(balanceResult.toString());
       } catch (error) {
         const err = error as Error;
-        console.error("Failed to fetch rate in quote:", err.message);
+        console.error("Failed to fetch token data:", err.message);
         setError(err.message);
+      } finally {
+        setTokenMetricsLoading(false);
       }
     };
 
-    // Asset balance
-    const fetchAssetBalance = async () => {
-      try {
-        // If the user is on the deposit tab, the balance shown is the balance of the selected deposit token
-        const depositTokenAddress = availableDepositTokens[depositTokenIndex].token.addresses[mainnet.id];
-        if (!depositTokenAddress || !address) return;
-        const balance = await balanceOf({
-          balanceAddress: address,
-          tokenAddress: depositTokenAddress,
-          chainId: mainnet.id,
-        });
-        setAssetBalance(balance.toString());
-      } catch (error) {
-        const err = error as Error;
-        console.error("Failed to fetch user balance for selected token:", err.message);
-        setError(err.message);
-      }
-    };
-
-    // Execute only rate and balance fetches in parallel
-    setLoading(true);
-    Promise.allSettled([fetchRateInQuote(), fetchAssetBalance()]).finally(() => {
-      setLoading(false);
-    });
+    fetchTokenData();
   }, [
     activeTab,
     address,
     availableDepositTokens,
     availableReceiveTokens,
-    config.deposit.bridgeChainIdentifier,
     depositTokenIndex,
     receiveTokenIndex,
     vaultKey,
+    tokenDataCache,
   ]);
 
   // Separate effect just for preview fee fetching.
   useEffect(() => {
     const fetchPreviewFee = async () => {
       try {
-        setLoading(true);
         const bridgeChainId = config.deposit.bridgeChainIdentifier;
         if (!address || bridgeChainId === 0 || debouncedInputValue === "") return;
+
+        // Only set loading if we're actually going to fetch new data
+        setTokenMetricsLoading(true);
         const previewFee = await VaultService.getPreviewFee({
           vaultKey: vaultKey as VaultKey,
           address: address as `0x${string}`,
@@ -178,7 +199,7 @@ export function useVault() {
         console.error("Failed to fetch preview fee:", err.message);
         setError(err.message);
       } finally {
-        setLoading(false);
+        setTokenMetricsLoading(false);
       }
     };
 
@@ -187,85 +208,43 @@ export function useVault() {
 
   // Data that remains constant with the vault key
   useEffect(() => {
-    // Vault balance
-    const fetchVaultBalance = async () => {
+    const fetchVaultData = async () => {
       try {
-        const config = getVaultByKey(vaultKey as VaultKey);
-        const tokenAddress = config.token.addresses[mainnet.id];
-        if (!tokenAddress || !address) return;
-        const balance = await balanceOf({
-          balanceAddress: address,
-          tokenAddress,
-          chainId: mainnet.id,
-        });
+        const vaultTokenAddress = getVaultByKey(vaultKey as VaultKey).token.addresses[mainnet.id];
+
+        if (!vaultTokenAddress || !address) {
+          setVaultBalance("0");
+          return;
+        }
+
+        setVaultMetricsLoading(true);
+        const [balance, apy, tvl, ethRate, ethPriceResult] = await Promise.all([
+          balanceOf({
+            balanceAddress: address as `0x${string}`,
+            tokenAddress: vaultTokenAddress,
+            chainId: mainnet.id,
+          }),
+          ApyService.getApyByVault(vaultKey as VaultKey),
+          TvlService.getTvlByVault(vaultKey as VaultKey),
+          VaultService.getRateInQuote(vaultKey as VaultKey, "weth"),
+          getEthPrice({ chain: mainnet }),
+        ]);
+
         setVaultBalance(balance.toString());
-      } catch (error) {
-        const err = error as Error;
-        console.error("Failed to fetch vault balance:", err.message);
-        setError(err.message);
-      }
-    };
-
-    // Vault APY
-    const fetchVaultApy = async () => {
-      try {
-        const apy = await ApyService.getApyByVault(vaultKey as VaultKey);
         setVaultApy(apy);
-      } catch (error) {
-        const err = error as Error;
-        console.error("Failed to fetch vault apy:", err.message);
-        setError(err.message);
-      }
-    };
-
-    // Vault TVL
-    const fetchVaultTvl = async () => {
-      try {
-        const tvl = await TvlService.getTvlByVault(vaultKey as VaultKey);
         setVaultTvl(tvl.toString());
+        setEthPerVaultAssetRate(ethRate.toString());
+        setEthPrice(ethPriceResult.toString());
       } catch (error) {
         const err = error as Error;
-        console.error("Failed to fetch vault tvl:", err.message);
+        console.error("Failed to fetch vault data:", err.message);
         setError(err.message);
+      } finally {
+        setVaultMetricsLoading(false);
       }
     };
 
-    // Eth per vault asset rate
-    const fetchEthPerVaultAssetRate = async () => {
-      try {
-        // Fetching the rate for WETH since it's always the same as ETH
-        const rate = await VaultService.getRateInQuote(vaultKey as VaultKey, "weth");
-        setEthPerVaultAssetRate(rate.toString());
-      } catch (error) {
-        const err = error as Error;
-        console.error("Failed to fetch eth per vault asset rate:", err.message);
-        setError(err.message);
-      }
-    };
-
-    // Eth price
-    const fetchEthPrice = async () => {
-      try {
-        const price = await getEthPrice({ chain: mainnet });
-        setEthPrice(price.toString());
-      } catch (error) {
-        const err = error as Error;
-        console.error("Failed to fetch eth price:", err.message);
-        setError(err.message);
-      }
-    };
-
-    // Execute all fetches in parallel while maintaining individual error handling
-    setLoading(true);
-    Promise.allSettled([
-      fetchVaultBalance(),
-      fetchVaultApy(),
-      fetchVaultTvl(),
-      fetchEthPerVaultAssetRate(),
-      fetchEthPrice(),
-    ]).finally(() => {
-      setLoading(false);
-    });
+    fetchVaultData();
   }, [address, vaultKey]);
 
   //////////////////////////////
@@ -618,9 +597,10 @@ export function useVault() {
     inputValue,
     isDepositDisabled,
     isWithdrawDisabled,
-    loading,
     receiveTokenIndex,
     transactionStatus,
     withdrawing,
+    vaultMetricsLoading,
+    tokenMetricsLoading,
   };
 }

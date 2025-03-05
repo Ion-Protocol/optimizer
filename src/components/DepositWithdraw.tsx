@@ -37,10 +37,11 @@ export function DepositWithdraw() {
     inputValue,
     isDepositDisabled,
     isWithdrawDisabled,
-    loading,
     receiveTokenIndex,
     transactionStatus,
     withdrawing,
+    vaultMetricsLoading,
+    tokenMetricsLoading,
   } = useVault();
 
   // Add state for modal visibility
@@ -81,13 +82,22 @@ export function DepositWithdraw() {
               <div className="flex items-center gap-3">
                 <img src={getVaultIcon(vaultKey) || ""} alt={`${vaultKey} icon`} className="w-12 h-12" />
                 <div>
-                  <div className="flex items-baseline mt-5">
-                    <span className="text-[40px] font-medium text-[#CF5711]">{formattedVaultBalance}</span>
-                    <span className="text-[14px] text-[#CF5711]">{vaultKey}</span>
-                  </div>
-                  <div className="-mt-1">
-                    <span className="text-[#7b7b7b] text-[14px]">≈{formattedVaultBalanceInUsd}</span>
-                  </div>
+                  {vaultMetricsLoading ? (
+                    <div className="flex flex-col gap-2">
+                      <Skeleton className="h-[52px] w-[200px]" />
+                      <Skeleton className="h-[18px] w-[140px]" />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-baseline">
+                        <span className="text-[40px] font-medium text-[#CF5711]">{formattedVaultBalance}</span>
+                        <span className="text-[14px] text-[#CF5711]">{vaultKey}</span>
+                      </div>
+                      <div className="mt-1">
+                        <span className="text-[#7b7b7b] text-[14px]">≈{formattedVaultBalanceInUsd}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -97,7 +107,11 @@ export function DepositWithdraw() {
               <div className="bg-[#fff8f3] p-4 rounded-lg mb-6 mt-2">
                 <div className="flex flex-col">
                   <span className="text-[#cf5711] text-[14px] font-medium">APY</span>
-                  <span className="text-[24px] text-[#cf5711] font-medium">{formattedVaultApy}</span>
+                  {vaultMetricsLoading ? (
+                    <Skeleton className="h-[36px] w-[120px]" />
+                  ) : (
+                    <span className="text-[24px] text-[#cf5711] font-medium">{formattedVaultApy}</span>
+                  )}
                 </div>
               </div>
 
@@ -105,7 +119,11 @@ export function DepositWithdraw() {
                 <div className="flex items-center text-[#7b7b7b] text-[14px]">
                   <span>TVL</span>
                 </div>
-                <span className="text-[16px] font-medium">{formattedVaultTvl}</span>
+                {vaultMetricsLoading ? (
+                  <Skeleton className="h-[22px] w-[160px]" />
+                ) : (
+                  <span className="text-[16px] font-medium">{formattedVaultTvl}</span>
+                )}
               </div>
             </div>
           </div>
@@ -142,7 +160,7 @@ export function DepositWithdraw() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mt-2 text-sm text-[#7b7b7b]">
-                    {loading ? (
+                    {tokenMetricsLoading ? (
                       <Skeleton className="h-[20px] w-[120px]" />
                     ) : (
                       <span>{formattedAssetBalance} available</span>
@@ -154,14 +172,18 @@ export function DepositWithdraw() {
                   <label className="text-[#4d4d4d] text-[12px] block">And receive</label>
                   <div className="flex items-center gap-2">
                     <img src={getVaultIcon(vaultKey) || ""} alt={`${vaultKey} icon`} className="w-6 h-6" />
-                    {loading ? (
+                    {tokenMetricsLoading ? (
                       <Skeleton className="h-[24px] w-[120px]" />
                     ) : (
                       <span className="text-[16px]">{formattedReceiveAmount}</span>
                     )}
                   </div>
                   <div className="text-[12px] text-[#7b7b7b]">
-                    {loading ? <Skeleton className="h-[16px] w-[180px]" /> : `Exchange Rate: ${formattedExchangeRate}`}
+                    {tokenMetricsLoading ? (
+                      <Skeleton className="h-[16px] w-[180px]" />
+                    ) : (
+                      `Exchange Rate: ${formattedExchangeRate}`
+                    )}
                   </div>
                 </div>
 
@@ -169,7 +191,7 @@ export function DepositWithdraw() {
                   <Button
                     className="w-full text-[16px] py-6"
                     onClick={handleClickDeposit}
-                    disabled={isDepositDisabled || loading}
+                    disabled={isDepositDisabled || tokenMetricsLoading}
                   >
                     {depositing ? "Depositing..." : "Deposit"}
                   </Button>
@@ -198,7 +220,7 @@ export function DepositWithdraw() {
                 <div>
                   <label className="text-[#4d4d4d] text-[12px] mb-2 block">And receive</label>
                   <div className="flex items-center gap-2">
-                    {loading ? (
+                    {tokenMetricsLoading ? (
                       <Skeleton className="h-[24px] w-[120px]" />
                     ) : (
                       <span className="text-[16px]">{formattedReceiveAmount}</span>
@@ -215,7 +237,7 @@ export function DepositWithdraw() {
                   <Button
                     className="w-full text-[16px] py-6"
                     onClick={handleClickWithdraw}
-                    disabled={isWithdrawDisabled || loading}
+                    disabled={isWithdrawDisabled || tokenMetricsLoading}
                   >
                     {withdrawing ? "Withdrawing..." : "Withdraw"}
                   </Button>
