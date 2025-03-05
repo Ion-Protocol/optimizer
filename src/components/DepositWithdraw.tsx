@@ -11,6 +11,7 @@ import TransactionStatusCard from "./ui/transaction-status-card";
 import { useAccount } from "wagmi";
 import { Wallet } from "lucide-react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function DepositWithdraw() {
   const { vaultKey } = useParams<{ vaultKey: VaultKey }>();
@@ -141,7 +142,11 @@ export function DepositWithdraw() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mt-2 text-sm text-[#7b7b7b]">
-                    <span>{formattedAssetBalance} available</span>
+                    {loading ? (
+                      <Skeleton className="h-[20px] w-[120px]" />
+                    ) : (
+                      <span>{formattedAssetBalance} available</span>
+                    )}
                   </div>
                 </div>
 
@@ -149,9 +154,15 @@ export function DepositWithdraw() {
                   <label className="text-[#4d4d4d] text-[12px] block">And receive</label>
                   <div className="flex items-center gap-2">
                     <img src={getVaultIcon(vaultKey) || ""} alt={`${vaultKey} icon`} className="w-6 h-6" />
-                    <span className="text-[16px]">{formattedReceiveAmount}</span>
+                    {loading ? (
+                      <Skeleton className="h-[24px] w-[120px]" />
+                    ) : (
+                      <span className="text-[16px]">{formattedReceiveAmount}</span>
+                    )}
                   </div>
-                  <div className="text-[12px] text-[#7b7b7b]">Exchange Rate: {formattedExchangeRate}</div>
+                  <div className="text-[12px] text-[#7b7b7b]">
+                    {loading ? <Skeleton className="h-[16px] w-[180px]" /> : `Exchange Rate: ${formattedExchangeRate}`}
+                  </div>
                 </div>
 
                 {address ? (
@@ -187,7 +198,11 @@ export function DepositWithdraw() {
                 <div>
                   <label className="text-[#4d4d4d] text-[12px] mb-2 block">And receive</label>
                   <div className="flex items-center gap-2">
-                    <span className="text-[16px]">{formattedReceiveAmount}</span>
+                    {loading ? (
+                      <Skeleton className="h-[24px] w-[120px]" />
+                    ) : (
+                      <span className="text-[16px]">{formattedReceiveAmount}</span>
+                    )}
                     <TokenSelect
                       tokens={availableTokens}
                       selectedIndex={receiveTokenIndex}

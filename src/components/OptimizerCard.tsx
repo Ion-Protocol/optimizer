@@ -57,7 +57,7 @@ export function OptimizerCard({
       <div className="flex flex-row gap-3 w-full">
         {/* TVL */}
         <div className="flex-1">
-          <p className="text-[#7B7B7B] text-sm mb-1 m-0">TVL</p>
+          <p className="text-[#7B7B7B] text-sm mb-[14px] m-0">TVL</p>
           {loading ? (
             <Skeleton className="h-[28px] w-[120px]" />
           ) : (
@@ -67,7 +67,7 @@ export function OptimizerCard({
 
         {/* APY */}
         <div className="flex-1">
-          <p className="text-[#7B7B7B] text-sm mb-1 m-0">APY</p>
+          <p className="text-[#7B7B7B] text-sm mb-[14px] m-0">APY</p>
           {loading ? (
             <Skeleton className="h-[28px] w-[80px]" />
           ) : (
