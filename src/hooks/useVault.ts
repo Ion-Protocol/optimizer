@@ -510,7 +510,10 @@ export function useVault() {
   })}`;
 
   // Receive amount in the vault asset when the deposit tab is selected
-  const receiveAmountForDeposit = (BigInt(convertToBigIntString(inputValue)) * BigInt(rateInQuote)) / BigInt(1e18);
+  const receiveAmountForDeposit =
+    BigInt(rateInQuote) === BigInt(0)
+      ? BigInt(0)
+      : (BigInt(convertToBigIntString(inputValue)) * BigInt(1e18)) / BigInt(rateInQuote);
   const formattedReceiveAmountForDeposit = `${bigIntToNumberAsString(receiveAmountForDeposit, {
     maximumFractionDigits: 4,
   })} ${vaultKey}`;
