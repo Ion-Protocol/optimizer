@@ -28,7 +28,7 @@ export function RewardsTooltip({ rewardsCount, apy, vaultKey, points }: RewardsT
         <TooltipContent side="top" className="w-[300px] p-0 bg-transparent border-none">
           <div className="max-w-sm rounded-3xl bg-white p-6 shadow-lg border border-[#DFDFDF]">
             <div className="space-y-6">
-              <div>
+              <div className="p-2 rounded-lg bg-[#FAFAFA]">
                 <h2 className="mb-4 text-base font-medium text-gray-900">Default Yield</h2>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -43,7 +43,7 @@ export function RewardsTooltip({ rewardsCount, apy, vaultKey, points }: RewardsT
                 </div>
               </div>
 
-              <div>
+              <div className="p-2 rounded-lg bg-[#FAFAFA]">
                 <h2 className="mb-4 text-base font-medium text-gray-900">Multipliers</h2>
                 <div className="space-y-3">
                   {points.map((point) => (
