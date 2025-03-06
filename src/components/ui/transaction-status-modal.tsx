@@ -1,6 +1,7 @@
 import { getTokenIcon, getVaultIcon } from "@/lib/getIcons";
 import { VaultKey } from "@molecularlabs/nucleus-frontend";
-import { X, RefreshCw, ArrowRight, Clock, CheckCircle } from "lucide-react";
+import { X, RefreshCw, ArrowUpRight, Clock, CheckCircle } from "lucide-react";
+import CoinsStacked from "@/assets/svgs/coins-stacked.svg";
 
 type StepStatus = "idle" | "processing" | "done" | "error";
 
@@ -47,7 +48,7 @@ export interface TransactionStatusCardProps {
   onRefresh?: () => void;
 }
 
-export default function TransactionStatusCard({
+export default function TransactionStatusModal({
   steps,
   sendAmount,
   receiveAmount,
@@ -77,7 +78,7 @@ export default function TransactionStatusCard({
         );
       case "done":
         return (
-          <div className="flex items-center text-green-500">
+          <div className="flex items-center text-[#35715C]">
             <CheckCircle size={14} className="mr-1" />
             <span className="text-xs">Done</span>
           </div>
@@ -105,9 +106,9 @@ export default function TransactionStatusCard({
   };
 
   return (
-    <div className="w-[450px] border border-[#dfdfdf] rounded-lg overflow-hidden bg-white">
+    <div className="w-[450px] border border-[#dfdfdf] rounded-lg overflow-hidden bg-white py-3">
       {/* Header */}
-      <div className="p-4 border-b border-[#dfdfdf] relative">
+      <div className="p-4 relative">
         <button
           className="absolute right-4 top-4 text-[#7b7b7b] hover:text-[#4d4d4d] transition-colors"
           onClick={onClose}
@@ -123,45 +124,44 @@ export default function TransactionStatusCard({
       </div>
 
       {/* Transaction Details */}
-      <div className="bg-[#f8f8f8] py-10 px-[100px] flex items-center justify-between">
-        <div className="flex items-center flex-col gap-2">
-          <TokenIcon symbol={sendToken} />
-          <span className="text-sm font-medium text-[#1f180f] whitespace-nowrap">
-            -{sendAmount} {sendToken}
-          </span>
-        </div>
+      <div className="bg-white py-6 px-10 flex items-center justify-between">
+        <div className="border bg-[#F8F8F8] border-[#dfdfdf] rounded-lg flex items-center justify-between w-full py-8 px-[60px]">
+          <div className="flex items-center flex-col gap-2">
+            <TokenIcon symbol={sendToken} />
+            <span className="text-sm font-medium text-[#1f180f] whitespace-nowrap">
+              -{sendAmount} {sendToken}
+            </span>
+          </div>
 
-        <RefreshCw size={16} className={allStepsDone ? "" : "animate-spin"} />
+          <RefreshCw size={16} className={allStepsDone ? "" : "animate-spin"} />
 
-        <div className="flex items-center flex-col gap-2">
-          <TokenIcon symbol={receiveToken} />
-          <span className="text-sm font-medium text-[#1f180f] whitespace-nowrap">+{receiveAmount}</span>
+          <div className="flex items-center flex-col gap-2">
+            <TokenIcon symbol={receiveToken} />
+            <span className="text-sm font-medium text-[#1f180f] whitespace-nowrap">+{receiveAmount}</span>
+          </div>
         </div>
       </div>
 
       {/* Steps */}
       <div className="flex flex-col">
-        {steps.map((step, index) => (
-          <div
-            key={step.id}
-            className={`p-4 px-6 flex items-center justify-between ${
-              index !== steps.length - 1 ? "border-b border-[#dfdfdf]" : ""
-            }`}
-          >
+        {steps.map((step) => (
+          <div key={step.id} className="p-4 px-6 flex items-center justify-between">
             <div className="flex items-center">
               <div
-                className={`w-5 h-5 rounded-full flex items-center justify-center mr-2 ${
-                  step.status === "done" ? "text-green-500" : "text-[#7b7b7b]"
+                className={`flex justify-center items-center w-[32px] h-[32px] p-2 bg-[#DFDFDF] rounded-[100px] mr-2 ${
+                  step.status === "idle" ? "opacity-50" : ""
                 }`}
               >
                 {step.status === "done" ? (
-                  <CheckCircle size={20} />
+                  <CheckCircle size={20} className="text-black" />
+                ) : step.label.toLowerCase().includes("deposit") ? (
+                  <img src={CoinsStacked} alt="Deposit" className="w-4 h-4" />
                 ) : (
-                  <span className="w-4 h-4 border-2 border-[#7b7b7b] rounded-full"></span>
+                  <span className="w-4 h-4 border-2 border-black rounded-full"></span>
                 )}
               </div>
               <span className="text-sm text-[#1f180f]">{step.label}</span>
-              {step.status !== "idle" && <ArrowRight size={14} className="ml-1 text-[#7b7b7b]" />}
+              {step.status === "done" && <ArrowUpRight size={14} className="ml-1 text-[#7b7b7b]" />}
             </div>
 
             <div className="flex items-center">{renderStatusIndicator(step.status)}</div>

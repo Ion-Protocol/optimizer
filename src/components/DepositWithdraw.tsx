@@ -12,7 +12,7 @@ import { useVault } from "../hooks/useVault";
 import { getVaultIcon } from "../lib/getIcons";
 import { TokenSelect } from "./TokenSelect";
 import { TransactionErrorModal } from "./TransactionErrorModal";
-import TransactionStatusCard from "./ui/transaction-status-card";
+import TransactionStatusModal from "./ui/transaction-status-modal";
 
 export function DepositWithdraw() {
   const { vaultKey } = useParams<{ vaultKey: VaultKey }>();
@@ -344,7 +344,7 @@ export function DepositWithdraw() {
           onClick={() => setIsModalOpen(false)}
         >
           <div className="relative" onClick={(e) => e.stopPropagation()}>
-            <TransactionStatusCard
+            <TransactionStatusModal
               steps={
                 activeTab === "deposit"
                   ? [
