@@ -84,10 +84,10 @@ export function DepositWithdraw() {
 
   return (
     <>
-      <div className="bg-[#ffffff] p-9 border border-[#DFDFDF] rounded-[18px]">
-        <div className="max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-8 bg-white rounded-xl shadow-sm">
+      <div className="bg-[#ffffff] border border-[#DFDFDF] rounded-[18px] overflow-hidden">
+        <div className="max-w-6xl grid grid-cols-1 md:grid-cols-2 bg-white">
           {/* Left Column - Overview */}
-          <div>
+          <div className="border-r border-[#DFDFDF] p-9">
             <h2 className="text-[20px] font-medium text-[#1f180f]">Overview</h2>
 
             <div className="mt-6">
@@ -144,7 +144,7 @@ export function DepositWithdraw() {
           {/* Right Column - Deposit/Withdraw Form */}
           <div>
             <Tabs value={activeTab} onValueChange={changeSelectedTab as (value: string) => void} className="w-full">
-              <TabsList className="inline-grid grid-cols-2 mb-8">
+              <TabsList className="inline-grid grid-cols-2 mb-8 px-9 pt-9">
                 <TabsTrigger value="deposit" className="text-[14px] px-4">
                   Deposit
                 </TabsTrigger>
@@ -153,106 +153,127 @@ export function DepositWithdraw() {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="deposit" className="space-y-6">
-                <div>
-                  <label className="text-[#4d4d4d] text-[12px] mb-2 block">Your deposit</label>
-                  <div className="relative">
-                    <Input
-                      type="text"
-                      placeholder="0.00"
-                      className="pr-36 text-lg"
-                      value={inputValue}
-                      onChange={(e) => changeInputValue(e.target.value)}
-                    />
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                      <TokenSelect
-                        tokens={availableTokens}
-                        selectedIndex={depositTokenIndex}
-                        onChange={changeSelectedDepositToken}
-                      />
+              <TabsContent value="deposit">
+                <div className="pt-2">
+                  <div className="space-y-6 px-9">
+                    <div>
+                      <label className="text-[#4d4d4d] text-[12px] mb-2 block">Your deposit</label>
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          placeholder="0.00"
+                          className="pr-36 text-lg"
+                          value={inputValue}
+                          onChange={(e) => changeInputValue(e.target.value)}
+                        />
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                          <TokenSelect
+                            tokens={availableTokens}
+                            selectedIndex={depositTokenIndex}
+                            onChange={changeSelectedDepositToken}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2 text-sm text-[#7b7b7b]">
+                        {tokenMetricsLoading ? (
+                          <Skeleton className="h-[20px] w-[120px]" />
+                        ) : (
+                          <span>{formattedAssetBalance} available</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <label className="text-[#4d4d4d] text-[12px] block">And receive</label>
+                      <div className="flex items-center gap-2">
+                        <img src={getVaultIcon(vaultKey) || ""} alt={`${vaultKey} icon`} className="w-6 h-6" />
+                        {tokenMetricsLoading ? (
+                          <Skeleton className="h-[24px] w-[120px]" />
+                        ) : (
+                          <span className="text-[16px]">{formattedReceiveAmount}</span>
+                        )}
+                      </div>
+                      <div className="text-[12px] text-[#7b7b7b] pb-8">
+                        {tokenMetricsLoading ? (
+                          <Skeleton className="h-[16px] w-[180px]" />
+                        ) : (
+                          `Exchange Rate: ${formattedExchangeRate}`
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-2 text-sm text-[#7b7b7b]">
-                    {tokenMetricsLoading ? (
-                      <Skeleton className="h-[20px] w-[120px]" />
+                </div>
+
+                <div className="border-t border-[#DFDFDF]">
+                  <div className="px-9 pt-9">
+                    {address ? (
+                      <Button
+                        className="w-full text-[16px] py-6"
+                        onClick={handleClickDeposit}
+                        disabled={isDepositDisabled}
+                      >
+                        {depositing ? "Depositing..." : "Deposit"}
+                      </Button>
                     ) : (
-                      <span>{formattedAssetBalance} available</span>
+                      <CustomConnectButton />
                     )}
                   </div>
                 </div>
-
-                <div className="space-y-4">
-                  <label className="text-[#4d4d4d] text-[12px] block">And receive</label>
-                  <div className="flex items-center gap-2">
-                    <img src={getVaultIcon(vaultKey) || ""} alt={`${vaultKey} icon`} className="w-6 h-6" />
-                    {tokenMetricsLoading ? (
-                      <Skeleton className="h-[24px] w-[120px]" />
-                    ) : (
-                      <span className="text-[16px]">{formattedReceiveAmount}</span>
-                    )}
-                  </div>
-                  <div className="text-[12px] text-[#7b7b7b]">
-                    {tokenMetricsLoading ? (
-                      <Skeleton className="h-[16px] w-[180px]" />
-                    ) : (
-                      `Exchange Rate: ${formattedExchangeRate}`
-                    )}
-                  </div>
-                </div>
-
-                {address ? (
-                  <Button className="w-full text-[16px] py-6" onClick={handleClickDeposit} disabled={isDepositDisabled}>
-                    {depositing ? "Depositing..." : "Deposit"}
-                  </Button>
-                ) : (
-                  <CustomConnectButton />
-                )}
               </TabsContent>
 
-              <TabsContent value="withdraw" className="space-y-6">
-                <div>
-                  <label className="text-[#4d4d4d] text-[12px] mb-2 block">You withdraw</label>
-                  <div className="relative">
-                    <Input
-                      type="text"
-                      placeholder="0.00"
-                      className="pr-32 text-lg"
-                      value={inputValue}
-                      onChange={(e) => changeInputValue(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex items-center gap-2 mt-2 text-sm text-[#7b7b7b]">
-                    <span>{formattedAssetBalance} available</span>
+              <TabsContent value="withdraw">
+                <div className="pt-2">
+                  <div className="space-y-6 px-9">
+                    <div>
+                      <label className="text-[#4d4d4d] text-[12px] mb-2 block">You withdraw</label>
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          placeholder="0.00"
+                          className="pr-32 text-lg"
+                          value={inputValue}
+                          onChange={(e) => changeInputValue(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 mt-2 text-sm text-[#7b7b7b]">
+                        <span>{formattedAssetBalance} available</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <label className="text-[#4d4d4d] text-[12px] block">And receive</label>
+                      <div className="flex items-center gap-2">
+                        {tokenMetricsLoading ? (
+                          <Skeleton className="h-[24px] w-[120px]" />
+                        ) : (
+                          <span className="text-[16px]">{formattedReceiveAmount}</span>
+                        )}
+                        <TokenSelect
+                          tokens={availableTokens}
+                          selectedIndex={receiveTokenIndex}
+                          onChange={changeSelectedReceiveToken}
+                        />
+                      </div>
+                      <div className="text-[12px] text-[#7b7b7b] pb-8">{/* Added spacing to match deposit tab */}</div>
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-[#4d4d4d] text-[12px] mb-2 block">And receive</label>
-                  <div className="flex items-center gap-2">
-                    {tokenMetricsLoading ? (
-                      <Skeleton className="h-[24px] w-[120px]" />
+                <div className="border-t border-[#DFDFDF]">
+                  <div className="px-9 pt-9">
+                    {address ? (
+                      <Button
+                        className="w-full text-[16px] py-6"
+                        onClick={handleClickWithdraw}
+                        disabled={isWithdrawDisabled}
+                      >
+                        {withdrawing ? "Withdrawing..." : "Withdraw"}
+                      </Button>
                     ) : (
-                      <span className="text-[16px]">{formattedReceiveAmount}</span>
+                      <CustomConnectButton />
                     )}
-                    <TokenSelect
-                      tokens={availableTokens}
-                      selectedIndex={receiveTokenIndex}
-                      onChange={changeSelectedReceiveToken}
-                    />
                   </div>
                 </div>
-
-                {address ? (
-                  <Button
-                    className="w-full text-[16px] py-6"
-                    onClick={handleClickWithdraw}
-                    disabled={isWithdrawDisabled}
-                  >
-                    {withdrawing ? "Withdrawing..." : "Withdraw"}
-                  </Button>
-                ) : (
-                  <CustomConnectButton />
-                )}
               </TabsContent>
             </Tabs>
           </div>
