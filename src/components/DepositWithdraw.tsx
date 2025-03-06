@@ -1,77 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useParams } from "react-router-dom";
-import { useVault } from "../hooks/useVault";
-import { TokenSelect } from "./TokenSelect";
-import { getVaultIcon } from "../lib/getIcons";
-import { VaultKey } from "@molecularlabs/nucleus-frontend";
-import { useState, useEffect } from "react";
-import TransactionStatusCard from "./ui/transaction-status-card";
-import { useAccount } from "wagmi";
-import { Wallet, X, EyeOff } from "lucide-react";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Skeleton } from "@/components/ui/skeleton";
-
-function TransactionErrorModal({
-  error,
-  onClose,
-  activeTab,
-}: {
-  error: string;
-  onClose: () => void;
-  activeTab: string;
-}) {
-  const [showDetails, setShowDetails] = useState(true);
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div
-        className="w-full max-w-lg rounded-3xl bg-[#ffffff] shadow-lg max-h-[600px] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="border-b border-[#dfdfdf] p-6 relative">
-          <div className="flex flex-col items-center">
-            <h2 className="text-[24px] font-bold text-[#1f180f]">Error</h2>
-            <button onClick={onClose} className="absolute right-6 top-6 rounded-full p-1 hover:bg-[#dfdfdf]/50">
-              <X className="h-6 w-6 text-[#4d4d4d]" />
-            </button>
-          </div>
-          <p className="mt-2 text-center text-[16px] text-[#7b7b7b]">There was an error with this transaction</p>
-        </div>
-
-        {showDetails && (
-          <div className="p-6 overflow-auto">
-            <div className="rounded-lg bg-[#353535] p-6 text-[#ffffff]">
-              <div className="mb-4">
-                <div className="text-[16px] font-medium">
-                  {activeTab === "deposit" ? "Deposit failed" : "Withdraw failed"}
-                </div>
-                <div className="text-[16px] break-words overflow-auto max-h-[200px]">{error}</div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="flex gap-4 p-6 mt-auto">
-          <button
-            onClick={onClose}
-            className="flex-1 rounded-lg bg-[#ff6c15] py-4 text-center text-[16px] font-medium text-white"
-          >
-            Close
-          </button>
-          <button
-            onClick={() => setShowDetails(!showDetails)}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-[#dfdfdf] py-4 text-[16px] font-medium text-[#4d4d4d]"
-          >
-            <EyeOff className="h-5 w-5" />
-            {showDetails ? "Hide" : "Show"} details
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { VaultKey } from "@molecularlabs/nucleus-frontend";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { Wallet } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { useAccount } from "wagmi";
+import { useVault } from "../hooks/useVault";
+import { getVaultIcon } from "../lib/getIcons";
+import { TokenSelect } from "./TokenSelect";
+import { TransactionErrorModal } from "./TransactionErrorModal";
+import TransactionStatusModal from "./ui/transaction-status-modal";
 
 export function DepositWithdraw() {
   const { vaultKey } = useParams<{ vaultKey: VaultKey }>();
@@ -104,6 +45,7 @@ export function DepositWithdraw() {
     tokenMetricsLoading,
     error,
     resetTransactionStates,
+    formattedRedemptionPrice,
   } = useVault();
 
   // Add state for modal visibility
@@ -111,6 +53,9 @@ export function DepositWithdraw() {
 
   // Add state for error modal visibility
   const [showErrorModal, setShowErrorModal] = useState(false);
+
+  // Add state for collapse/expand
+  const [isExpanded, setIsExpanded] = useState(true);
 
   // Update useEffect to show error modal when error occurs
   useEffect(() => {
@@ -143,10 +88,10 @@ export function DepositWithdraw() {
 
   return (
     <>
-      <div className="bg-[#ffffff] p-9 border border-[#DFDFDF] rounded-[18px]">
-        <div className="max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-8 bg-white rounded-xl shadow-sm">
+      <div className="bg-[#ffffff] border border-[#DFDFDF] rounded-[18px] overflow-hidden">
+        <div className="max-w-6xl grid grid-cols-1 md:grid-cols-2 bg-white">
           {/* Left Column - Overview */}
-          <div>
+          <div className="border-r border-[#DFDFDF] p-9">
             <h2 className="text-[20px] font-medium text-[#1f180f]">Overview</h2>
 
             <div className="mt-6">
@@ -203,7 +148,7 @@ export function DepositWithdraw() {
           {/* Right Column - Deposit/Withdraw Form */}
           <div>
             <Tabs value={activeTab} onValueChange={changeSelectedTab as (value: string) => void} className="w-full">
-              <TabsList className="inline-grid grid-cols-2 mb-8">
+              <TabsList className="inline-grid grid-cols-2 mb-8 px-9 pt-9">
                 <TabsTrigger value="deposit" className="text-[14px] px-4">
                   Deposit
                 </TabsTrigger>
@@ -212,106 +157,180 @@ export function DepositWithdraw() {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="deposit" className="space-y-6">
-                <div>
-                  <label className="text-[#4d4d4d] text-[12px] mb-2 block">Your deposit</label>
-                  <div className="relative">
-                    <Input
-                      type="text"
-                      placeholder="0.00"
-                      className="pr-36 text-lg"
-                      value={inputValue}
-                      onChange={(e) => changeInputValue(e.target.value)}
-                    />
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                      <TokenSelect
-                        tokens={availableTokens}
-                        selectedIndex={depositTokenIndex}
-                        onChange={changeSelectedDepositToken}
-                      />
+              <TabsContent value="deposit">
+                <div className="pt-2">
+                  <div className="space-y-6 px-9">
+                    <div>
+                      <label className="text-[#4d4d4d] text-[12px] mb-2 block">Your deposit</label>
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          placeholder="0.00"
+                          className="pr-36 text-lg"
+                          value={inputValue}
+                          onChange={(e) => changeInputValue(e.target.value)}
+                        />
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                          <TokenSelect
+                            tokens={availableTokens}
+                            selectedIndex={depositTokenIndex}
+                            onChange={changeSelectedDepositToken}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2 text-sm text-[#7b7b7b]">
+                        {tokenMetricsLoading ? (
+                          <Skeleton className="h-[20px] w-[120px]" />
+                        ) : (
+                          <span>{formattedAssetBalance} available</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <label className="text-[#4d4d4d] text-[12px] block">And receive</label>
+                      <div className="flex items-center gap-2">
+                        <img src={getVaultIcon(vaultKey) || ""} alt={`${vaultKey} icon`} className="w-6 h-6" />
+                        {tokenMetricsLoading ? (
+                          <Skeleton className="h-[24px] w-[120px]" />
+                        ) : (
+                          <span className="text-[16px]">{formattedReceiveAmount}</span>
+                        )}
+                      </div>
+                      <div className="text-[12px] text-[#7b7b7b] pb-8">
+                        {tokenMetricsLoading ? (
+                          <Skeleton className="h-[16px] w-[180px]" />
+                        ) : (
+                          `Exchange Rate: ${formattedExchangeRate}`
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-2 text-sm text-[#7b7b7b]">
-                    {tokenMetricsLoading ? (
-                      <Skeleton className="h-[20px] w-[120px]" />
+                </div>
+
+                <div className="border-t border-[#DFDFDF]">
+                  <div className="px-9 pt-9">
+                    {address ? (
+                      <Button
+                        className="w-full text-[16px] py-6"
+                        onClick={handleClickDeposit}
+                        disabled={isDepositDisabled}
+                      >
+                        {depositing ? "Depositing..." : "Deposit"}
+                      </Button>
                     ) : (
-                      <span>{formattedAssetBalance} available</span>
+                      <CustomConnectButton />
                     )}
                   </div>
                 </div>
-
-                <div className="space-y-4">
-                  <label className="text-[#4d4d4d] text-[12px] block">And receive</label>
-                  <div className="flex items-center gap-2">
-                    <img src={getVaultIcon(vaultKey) || ""} alt={`${vaultKey} icon`} className="w-6 h-6" />
-                    {tokenMetricsLoading ? (
-                      <Skeleton className="h-[24px] w-[120px]" />
-                    ) : (
-                      <span className="text-[16px]">{formattedReceiveAmount}</span>
-                    )}
-                  </div>
-                  <div className="text-[12px] text-[#7b7b7b]">
-                    {tokenMetricsLoading ? (
-                      <Skeleton className="h-[16px] w-[180px]" />
-                    ) : (
-                      `Exchange Rate: ${formattedExchangeRate}`
-                    )}
-                  </div>
-                </div>
-
-                {address ? (
-                  <Button className="w-full text-[16px] py-6" onClick={handleClickDeposit} disabled={isDepositDisabled}>
-                    {depositing ? "Depositing..." : "Deposit"}
-                  </Button>
-                ) : (
-                  <CustomConnectButton />
-                )}
               </TabsContent>
 
-              <TabsContent value="withdraw" className="space-y-6">
-                <div>
-                  <label className="text-[#4d4d4d] text-[12px] mb-2 block">You withdraw</label>
-                  <div className="relative">
-                    <Input
-                      type="text"
-                      placeholder="0.00"
-                      className="pr-32 text-lg"
-                      value={inputValue}
-                      onChange={(e) => changeInputValue(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex items-center gap-2 mt-2 text-sm text-[#7b7b7b]">
-                    <span>{formattedAssetBalance} available</span>
+              <TabsContent value="withdraw">
+                <div className="pt-2">
+                  <div className="space-y-6 px-9">
+                    <div>
+                      <label className="text-[#4d4d4d] text-[12px] mb-2 block">You withdraw</label>
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          placeholder="0.00"
+                          className="pr-32 text-lg"
+                          value={inputValue}
+                          onChange={(e) => changeInputValue(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 mt-2 text-sm text-[#7b7b7b]">
+                        <span>{formattedAssetBalance} available</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <label className="text-[#4d4d4d] text-[12px] block">And receive</label>
+                      <div className="flex items-center gap-2">
+                        {tokenMetricsLoading ? (
+                          <Skeleton className="h-[24px] w-[120px]" />
+                        ) : (
+                          <span className="text-[16px]">{formattedReceiveAmount}</span>
+                        )}
+                        <TokenSelect
+                          tokens={availableTokens}
+                          selectedIndex={receiveTokenIndex}
+                          onChange={changeSelectedReceiveToken}
+                        />
+                      </div>
+                      <div className="text-[12px] text-[#7b7b7b] pb-8">{/* Added spacing to match deposit tab */}</div>
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-[#4d4d4d] text-[12px] mb-2 block">And receive</label>
-                  <div className="flex items-center gap-2">
-                    {tokenMetricsLoading ? (
-                      <Skeleton className="h-[24px] w-[120px]" />
+                <div className="border-t border-[#DFDFDF]">
+                  <div className="px-9 pt-9 pb-9">
+                    {/* Add withdrawal info summary */}
+                    <div className="space-y-4 pb-8">
+                      {/* Redemption Price Row - now clickable */}
+                      <div
+                        className="flex justify-between items-center cursor-pointer"
+                        onClick={() => setIsExpanded(!isExpanded)}
+                      >
+                        <span className="text-[#7b7b7b] text-[16px]">Redemption Price</span>
+                        <div className="flex items-center">
+                          <span className="text-[#1f180f] text-[16px] font-medium">{formattedRedemptionPrice}</span>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className={`ml-1 text-[#1f180f] transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                          >
+                            <path d="m6 9 6 6 6-6" />
+                          </svg>
+                        </div>
+                      </div>
+
+                      {/* Collapsible content with animation and indentation */}
+                      <div
+                        className={`space-y-4 pl-4 overflow-hidden transition-all duration-200 ${
+                          isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+                        }`}
+                      >
+                        {/* Exchange Rate Row */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-[#7b7b7b] text-[16px]">Exchange Rate</span>
+                          <span className="text-[#1f180f] text-[16px] font-medium">{formattedExchangeRate}</span>
+                        </div>
+
+                        {/* Withdraw Fee Row */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-[#7b7b7b] text-[16px]">Withdraw Fee</span>
+                          <span className="text-[#1f180f] text-[16px] font-medium">0.2%</span>
+                        </div>
+
+                        {/* Deadline Row */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-[#7b7b7b] text-[16px]">Deadline</span>
+                          <span className="text-[#1f180f] text-[16px] font-medium">3 days</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {address ? (
+                      <Button
+                        className="w-full text-[16px] py-6"
+                        onClick={handleClickWithdraw}
+                        disabled={isWithdrawDisabled}
+                      >
+                        {withdrawing ? "Withdrawing..." : "Withdraw"}
+                      </Button>
                     ) : (
-                      <span className="text-[16px]">{formattedReceiveAmount}</span>
+                      <CustomConnectButton />
                     )}
-                    <TokenSelect
-                      tokens={availableTokens}
-                      selectedIndex={receiveTokenIndex}
-                      onChange={changeSelectedReceiveToken}
-                    />
                   </div>
                 </div>
-
-                {address ? (
-                  <Button
-                    className="w-full text-[16px] py-6"
-                    onClick={handleClickWithdraw}
-                    disabled={isWithdrawDisabled}
-                  >
-                    {withdrawing ? "Withdrawing..." : "Withdraw"}
-                  </Button>
-                ) : (
-                  <CustomConnectButton />
-                )}
               </TabsContent>
             </Tabs>
           </div>
@@ -325,7 +344,7 @@ export function DepositWithdraw() {
           onClick={() => setIsModalOpen(false)}
         >
           <div className="relative" onClick={(e) => e.stopPropagation()}>
-            <TransactionStatusCard
+            <TransactionStatusModal
               steps={
                 activeTab === "deposit"
                   ? [
