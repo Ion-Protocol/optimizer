@@ -2,7 +2,7 @@ import { RewardsTooltip } from "@/components/RewardsTooltip";
 import { OptimizerCard } from "@/components/OptimizerCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VaultKey } from "@molecularlabs/nucleus-frontend";
-import { ArrowLeft, CoinsIcon } from "lucide-react";
+import { ArrowLeft, CoinsIcon, Lock } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useVaultGroup } from "../hooks/useVaultGroup";
 
@@ -42,12 +42,18 @@ export function VaultGroup() {
           <div className="flex flex-col gap-1">
             {loading ? (
               <>
-                <Skeleton className="h-[32px] w-[180px]" />
+                <div className="flex flex-col items-center">
+                  <Lock className="text-gray-600 mb-3" size={20} />
+                  <Skeleton className="h-[32px] w-[180px]" />
+                </div>
                 <span className="text-gray-600">Total Value Locked</span>
               </>
             ) : (
               <>
-                <span className="text-2xl font-semibold">{totalTvl}</span>
+                <div className="flex flex-col items-center">
+                  <Lock className="text-gray-600 mb-3" size={20} />
+                  <span className="text-2xl font-semibold">{totalTvl}</span>
+                </div>
                 <span className="text-gray-600">Total Value Locked</span>
               </>
             )}
