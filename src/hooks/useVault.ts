@@ -540,6 +540,17 @@ export function useVault() {
   // Slippage
   const formattedSlippage = `${(DEFAULT_SLIPPAGE * 100).toFixed(2)}%`;
 
+  // Redemption price (exchange rate with 0.2% withdraw fee applied)
+  const WITHDRAW_FEE = 0.002; // 0.2%
+  const redemptionRate =
+    BigInt(rateInQuote) === BigInt(0)
+      ? BigInt(0)
+      : (BigInt(rateInQuote) * BigInt(1000 - WITHDRAW_FEE * 1000)) / BigInt(1000);
+
+  const formattedRedemptionPrice = `${
+    redemptionRate ? bigIntToNumberAsString(redemptionRate, { maximumFractionDigits: 4 }) : "0.00"
+  } ${availableTokens[depositTokenIndex].token.symbol} / ${vaultKey}`;
+
   // Are buttons disabled
   const isDepositDisabled =
     inputValue === "" ||
@@ -625,6 +636,7 @@ export function useVault() {
     formattedVaultBalance,
     formattedVaultBalanceInUsd,
     formattedVaultTvl,
+    formattedRedemptionPrice,
     handleDeposit,
     handleWithdraw,
     inputValue,

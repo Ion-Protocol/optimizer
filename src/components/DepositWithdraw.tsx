@@ -45,6 +45,7 @@ export function DepositWithdraw() {
     tokenMetricsLoading,
     error,
     resetTransactionStates,
+    formattedRedemptionPrice,
   } = useVault();
 
   // Add state for modal visibility
@@ -52,6 +53,9 @@ export function DepositWithdraw() {
 
   // Add state for error modal visibility
   const [showErrorModal, setShowErrorModal] = useState(false);
+
+  // Add state for collapse/expand
+  const [isExpanded, setIsExpanded] = useState(true);
 
   // Update useEffect to show error modal when error occurs
   useEffect(() => {
@@ -260,7 +264,60 @@ export function DepositWithdraw() {
                 </div>
 
                 <div className="border-t border-[#DFDFDF]">
-                  <div className="px-9 pt-9">
+                  <div className="px-9 pt-9 pb-9">
+                    {/* Add withdrawal info summary */}
+                    <div className="space-y-4 pb-8">
+                      {/* Redemption Price Row - now clickable */}
+                      <div
+                        className="flex justify-between items-center cursor-pointer"
+                        onClick={() => setIsExpanded(!isExpanded)}
+                      >
+                        <span className="text-[#7b7b7b] text-[16px]">Redemption Price</span>
+                        <div className="flex items-center">
+                          <span className="text-[#1f180f] text-[16px] font-medium">{formattedRedemptionPrice}</span>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className={`ml-1 text-[#1f180f] transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                          >
+                            <path d="m6 9 6 6 6-6" />
+                          </svg>
+                        </div>
+                      </div>
+
+                      {/* Collapsible content with animation and indentation */}
+                      <div
+                        className={`space-y-4 pl-4 overflow-hidden transition-all duration-200 ${
+                          isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+                        }`}
+                      >
+                        {/* Exchange Rate Row */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-[#7b7b7b] text-[16px]">Exchange Rate</span>
+                          <span className="text-[#1f180f] text-[16px] font-medium">{formattedExchangeRate}</span>
+                        </div>
+
+                        {/* Withdraw Fee Row */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-[#7b7b7b] text-[16px]">Withdraw Fee</span>
+                          <span className="text-[#1f180f] text-[16px] font-medium">0.2%</span>
+                        </div>
+
+                        {/* Deadline Row */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-[#7b7b7b] text-[16px]">Deadline</span>
+                          <span className="text-[#1f180f] text-[16px] font-medium">3 days</span>
+                        </div>
+                      </div>
+                    </div>
+
                     {address ? (
                       <Button
                         className="w-full text-[16px] py-6"
