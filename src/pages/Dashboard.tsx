@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useDashboard } from "../hooks/useDashboard";
 import { VaultGroup } from "../types";
-import { X, Map as MapIcon } from "lucide-react";
+import { X, Map as MapIcon, Lock } from "lucide-react";
 import dashboardMaskGroup from "../assets/dashboard-mask-group.png";
 import { useState } from "react";
 import { OptimizerCard } from "../components/OptimizerCard";
@@ -35,12 +35,18 @@ export function Dashboard() {
           <div className="flex flex-col gap-1">
             {loading ? (
               <>
-                <Skeleton className="h-[32px] w-[180px]" />
+                <div className="flex flex-col items-center">
+                  <Lock className="text-gray-600 mb-3" size={20} />
+                  <Skeleton className="h-[32px] w-[180px]" />
+                </div>
                 <span className="text-gray-600">Total Value Locked</span>
               </>
             ) : (
               <>
-                <span className="text-2xl font-semibold">{totalTvl}</span>
+                <div className="flex flex-col items-center">
+                  <Lock className="text-gray-600 mb-3" size={20} />
+                  <span className="text-2xl font-semibold">{totalTvl}</span>
+                </div>
                 <span className="text-gray-600">Total Value Locked</span>
               </>
             )}
